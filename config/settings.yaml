@@ -1,0 +1,12 @@
+audio:
+  sample_rate: 22050
+  silence_threshold_db: 20
+thresholds:
+  volume_min: 0.02
+  volume_max: 0.15
+  pause_ratio_max: 0.25
+fillers:
+  - euh
+  - bah
+  - genre
+  - du coup

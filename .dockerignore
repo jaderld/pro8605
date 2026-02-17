@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+.env.*
+storage/models/*
+mlruns/
+mlflow/mlflow.db
+*.sqlite3
+*.db
+.vscode/
+.DS_Store
+Thumbs.db

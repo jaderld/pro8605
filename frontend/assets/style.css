@@ -1,0 +1,31 @@
+/* Modern Streamlit custom styles */
+
+h1, h2 {
+    color: #2c3e50;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 700;
+}
+
+.stMetric {
+    background: #f5f6fa;
+    border-radius: 10px;
+    padding: 1em;
+    margin-bottom: 1em;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.05);
+}
+
+.stDataFrame {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Custom metric colors */
+.metric-positive {
+    color: #27ae60;
+}
+.metric-negative {
+    color: #e74c3c;
+}
+.metric-neutral {
+    color: #f39c12;
+}

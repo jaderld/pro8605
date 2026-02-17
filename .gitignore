@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+.env.*
+# Data/Models
+storage/models/*
+mlruns/
+monitoring/mlflow/mlflow.db
+*.sqlite3
+*.db
+# Jupyter/Streamlit
+.ipynb_checkpoints/
+# VSCode
+.vscode/
+# OS
+.DS_Store
+Thumbs.db

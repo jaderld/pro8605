@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # --- ML ENGINE & TRACKING ---
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.7.1
+    container_name: interviewflow_mlflow
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    command: >
+      mlflow server 
+      --backend-store-uri sqlite:///mlflow/mlflow.db 
+      --default-artifact-root /mlflow/artifacts 
+      --host 0.0.0.0
+    volumes:
+      - ./storage/mlflow:/mlflow
+
+  # --- BACKEND (FastAPI) ---
+  api:
+    build:
+      context: .  # On remonte au root pour accéder à /src
+      dockerfile: api/Dockerfile
+    container_name: interviewflow_api
+    env_file: .env
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./api:/app/api
+      - ./src:/app/src           # CRITIQUE : Montage du code source
+      - ./storage:/app/storage
+      - ./config:/app/config
+      - ./database:/app/database
+    depends_on:
+      - mlflow
+
+  # --- FRONTEND (Streamlit) ---
+  frontend:
+    build:
+      context: . # On remonte au root pour accéder à /src si besoin
+      dockerfile: frontend/Dockerfile
+    container_name: interviewflow_frontend
+    env_file: .env
+    ports:
+      - "${FRONTEND_PORT:-8501}:8501"
+    volumes:
+      - ./frontend:/app/frontend
+      - ./src:/app/src           # Utile si le front utilise des utilitaires src
+    depends_on:
+      - api
+
+  # --- MONITORING ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: interviewflow_prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus # Persistance des métriques
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: interviewflow_grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - ./infra/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana # Persistance des configs/users
+
+volumes:
+  prometheus_data:
+  grafana_data:
