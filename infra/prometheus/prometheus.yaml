@@ -1,6 +1,7 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 10s
+
 scrape_configs:
-  - job_name: 'interviewflow_api'
+  - job_name: 'interviewflow-api'
     static_configs:
-      - targets: ['localhost:8000']
+      - targets: ['api:8000']

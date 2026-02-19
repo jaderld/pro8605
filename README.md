@@ -12,7 +12,7 @@
 - **Tests unitaires** : Pour pipeline, modèles ML/DL, etc.
 
 
-# Projet PFE pro8605
+# Projet PFE PRO 8605
 
 Ce projet est une plateforme complète d’analyse d’entretiens, d’audio et de texte, avec scoring automatique, monitoring, et visualisation. Il s’adresse aux besoins de simulation, d’évaluation, et de feedback pour des applications RH, pédagogiques ou de recherche.
 
@@ -190,6 +190,3 @@ python -m unittest discover -s tests/unit
 
 ---
 
-## Licence
-
-Projet réalisé dans le cadre du PFE 2026. Licence MIT.

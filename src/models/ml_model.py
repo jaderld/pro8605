@@ -19,12 +19,12 @@ class ScoringModel:
         if os.path.exists(self.model_path):
             with open(self.model_path, 'rb') as f:
                 self.model = pickle.load(f)
-            print("✅ Modèle ML chargé avec succès.")
+            print("Modèle ML chargé avec succès.")
         else:
-            print("⚠️ Aucun modèle ML trouvé. L'entraînement est nécessaire.")
+            print("Aucun modèle ML trouvé. L'entraînement est nécessaire.")
 
     def train(self, df: pd.DataFrame):
-        print("🚀 Début de l'entraînement du modèle ML...")
+        print("Début de l'entraînement du modèle ML.")
         
         features = ['filler_count', 'pause_ratio', 'sentiment']
         target = 'target_score'

@@ -13,6 +13,7 @@ from src.processors.nlp_engine import NLPEngine
 from src.models.dl_model import InterviewModel
 from src.models.ml_model import ScoringModel
 from src.monitoring.metrics import PROCESSING_TIME
+from src.monitoring.metrics import FINAL_SCORE_GAUGE
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -35,7 +36,6 @@ metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
 # --- INTERFACE WEB STATIQUE (Le Frontend intégré) ---
-# Autorise FastAPI à lire le dossier api/static/ (où sont CSS et JS)
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 
 @app.get("/", tags=["UI"])
@@ -53,32 +53,37 @@ async def analyze_file(file: UploadFile = File(...)):
     """Reçoit l'audio du navigateur, l'analyse, et renvoie le JSON de résultats."""
     temp_path = None
     try:
-        # 1. Sauvegarde temporaire
+        # 1. Sauvegarde temporaire du fichier audio entrant
         suffix = os.path.splitext(file.filename)[1]
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             shutil.copyfileobj(file.file, tmp)
             temp_path = tmp.name
 
         with PROCESSING_TIME.labels(module='total').time():
-            # 2. Audio Engine (Physique du son)
+            # 2. Audio Engine : Analyse physique (Pause ratio, Volume, BPM)
+            # On utilise l'audio complet pour calculer les stats de silence
             audio_results = audio_engine.process_signal(temp_path)
+            
             if audio_results.get('status') == 'error':
                 raise Exception(audio_results.get('error', 'Erreur audio interne'))
 
-            # 3. Deep Learning (Whisper + EmotionNet)
-            transcription = dl_model.transcribe_audio(
-                temp_path, 
-                speech_segments=audio_results.get('speech_segments', [])
-            )
+            # 3. Deep Learning : Transcription Whisper + Émotion PyTorch
+            # NOTE : On envoie le temp_path DIRECTEMENT sans segments pour que Whisper
+            # entende les "euh" et les hésitations.
+            transcription = dl_model.transcribe_audio(temp_path)
+            
+            # Analyse d'émotion basée sur le vecteur de caractéristiques audio
             emotion_data = dl_model.predict_emotion(audio_results['dl_input_vector'])
 
-            # 4. NLP Engine (Sémantique & Tics)
+            # 4. NLP Engine : Analyse du texte (Comptage des tics et sentiment)
             nlp_results = nlp_engine.analyze_text(transcription)
 
-            # 5. ML Model (Scoring global)
-            final_score = ml_model.predict_score(audio_results['dl_input_vector'], nlp_results)
+            # 5. ML Model : Calcul de la note globale (Juge final)
+            # On passe le dictionnaire 'features' (contient pause_ratio, volume, etc.)
+            final_score = ml_model.predict_score(audio_results['features'], nlp_results)
+            FINAL_SCORE_GAUGE.set(final_score)
 
-            # Assemblage
+            # 6. Assemblage du résultat final
             full_analysis = {
                 "filename": file.filename,
                 "transcription": transcription,
@@ -86,11 +91,12 @@ async def analyze_file(file: UploadFile = File(...)):
                 "nlp": nlp_results,
                 "emotion_analysis": emotion_data,
                 "final_scoring": {
-                    "overall_score": final_score,
+                    "overall_score": round(float(final_score), 2),
                     "interpretation": "Excellent" if final_score > 80 else "À améliorer"
                 }
             }
 
+            logger.info(f"Analyse terminée pour {file.filename} - Score: {final_score}")
             return JSONResponse(content=full_analysis)
 
     except Exception as e:
@@ -98,7 +104,7 @@ async def analyze_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
     
     finally:
-        # Nettoyage indispensable pour ne pas saturer le conteneur
+        # Nettoyage du fichier temporaire pour éviter de saturer Docker
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
@@ -107,7 +113,6 @@ async def analyze_file(file: UploadFile = File(...)):
 def train_scoring_model():
     import pandas as pd
     try:
-        # On lit les données simulées et on lance l'entraînement
         df = pd.read_csv('storage/fake_sessions.csv')
         ml_model.train(df)
         return {"status": "trained", "message": "Modèle RandomForest mis à jour avec succès."}
@@ -116,7 +121,5 @@ def train_scoring_model():
 
 @app.post("/dl/train/", tags=["MLOps"])
 def train_emotion_model():
-    try:
-        return {"status": "Success", "message": "Réseau PyTorch prêt pour entraînement."}
-    except Exception as e:
-        return {"status": "Error", "error": str(e)}
+    # Placeholder pour l'entraînement PyTorch futur
+    return {"status": "Success", "message": "Réseau PyTorch prêt pour entraînement."}
