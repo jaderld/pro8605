@@ -15,38 +15,24 @@ services:
     volumes:
       - ./storage/mlflow:/mlflow
 
-  # --- BACKEND (FastAPI) ---
+  # --- BACKEND & UI (FastAPI sert le HTML/JS) ---
   api:
     build:
-      context: .  # On remonte au root pour accéder à /src
+      context: .  # On remonte au root pour accéder à tout
       dockerfile: api/Dockerfile
     container_name: interviewflow_api
     env_file: .env
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
-      - ./api:/app/api
-      - ./src:/app/src           # CRITIQUE : Montage du code source
-      - ./storage:/app/storage
-      - ./config:/app/config
-      - ./database:/app/database
+      - ./api:/app/api           # Contient maintenant ton dossier /static (HTML/CSS/JS)
+      - ./src:/app/src           # CRITIQUE : Le code source MLOps
+      - ./storage:/app/storage   # Les modèles et les données simulées
+      - ./config:/app/config     # Le settings.yaml
+      - ./database:/app/database # La base de données
+      - ./scripts:/app/scripts
     depends_on:
       - mlflow
-
-  # --- FRONTEND (Streamlit) ---
-  frontend:
-    build:
-      context: . # On remonte au root pour accéder à /src si besoin
-      dockerfile: frontend/Dockerfile
-    container_name: interviewflow_frontend
-    env_file: .env
-    ports:
-      - "${FRONTEND_PORT:-8501}:8501"
-    volumes:
-      - ./frontend:/app/frontend
-      - ./src:/app/src           # Utile si le front utilise des utilitaires src
-    depends_on:
-      - api
 
   # --- MONITORING ---
   prometheus:

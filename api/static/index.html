@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InterviewFlow AI</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>InterviewFlow AI 🎙️</h1>
+            <p>Analysez vos soft skills et votre stress en temps réel</p>
+        </header>
+
+        <main>
+            <div class="recorder-section">
+                <button id="recordBtn" class="btn start">🎤 Démarrer l'Enregistrement</button>
+                <p id="status">Prêt à enregistrer</p>
+                <audio id="audioPlayback" controls style="display:none;"></audio>
+            </div>
+
+            <div id="results" class="results-grid hidden">
+                <div class="card score-card">
+                    <h3>Score Global</h3>
+                    <div class="score-circle" id="globalScore">--</div>
+                </div>
+
+                <div class="card">
+                    <h3>État Émotionnel</h3>
+                    <p>Sentiment: <span id="sentimentVal">--</span></p>
+                    <p>Stress (Audio): <span id="stressVal">--</span></p>
+                </div>
+
+                <div class="card">
+                    <h3>Tics de Langage</h3>
+                    <ul id="fillersList"></ul>
+                </div>
+
+                <div class="card full-width">
+                    <h3>Transcription</h3>
+                    <p id="transcriptionText" class="transcription"></p>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>

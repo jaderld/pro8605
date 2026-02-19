@@ -1,18 +1,26 @@
+# --- Version CPU uniquement (Indispensable pour Docker léger) ---
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Core IA
+torch
+torchaudio
+openai-whisper
+librosa
+textblob
+scipy
+numpy
+pandas
+
+# API & Web
 streamlit
 streamlit-audiorecorder
 fastapi
 uvicorn
 python-multipart
-numpy
-pandas
-librosa
-openai-whisper
-textblob
-pyyaml
-matplotlib
-scipy
-torch
-ffmpeg-python
-grafana
+
+# MLOps & Infra
 mlflow
 prometheus-client
+pyyaml
+matplotlib
+ffmpeg-python
