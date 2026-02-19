@@ -1,6 +1,6 @@
-# InterviewFlow AI
+# 
 
-**InterviewFlow AI** est une application B2B complète de simulation d'entretiens, d'analyse audio/texte et de feedback soft skills, pensée pour les entreprises, écoles et coachs RH.
+**Ce projet** est une application B2B complète de simulation d'entretiens, d'analyse audio/texte et de feedback soft skills, pensée pour les entreprises, écoles et coachs RH.
 
 ## Fonctionnalités principales
 - **Simulation d'entretien** : Enregistrement audio via le navigateur, analyse en temps réel.
