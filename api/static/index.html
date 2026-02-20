@@ -3,37 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InterviewFlow AI</title>
+    <title>InterviewFlow AI | Analyseur de Soft Skills</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>InterviewFlow AI 🎙️</h1>
-            <p>Analysez vos soft skills et votre stress en temps réel</p>
+            <h1>PRO8605 : Simulateur d'entretien - analyse soft skills 🎙️</h1>
+            <p>Analyse en temps réel : Voix, discours & émotions</p>
         </header>
 
         <main>
             <div class="recorder-section">
-                <button id="recordBtn" class="btn start">🎤 Démarrer l'Enregistrement</button>
-                <p id="status">Prêt à enregistrer</p>
-                <audio id="audioPlayback" controls style="display:none;"></audio>
+                <button id="recordBtn" class="btn start">🎤 Démarrer l'enregistrement</button>
+                <p id="status">Prêt pour l'analyse</p>
             </div>
 
             <div id="results" class="results-grid hidden">
                 <div class="card score-card">
-                    <h3>Score Global</h3>
+                    <h3>Score Final</h3>
                     <div class="score-circle" id="globalScore">--</div>
+                    <p id="interpretation" class="badge">--</p>
                 </div>
 
                 <div class="card">
-                    <h3>État Émotionnel</h3>
-                    <p>Sentiment: <span id="sentimentVal">--</span></p>
-                    <p>Stress (Audio): <span id="stressVal">--</span></p>
+                    <h3>Physique de la voix</h3>
+                    <p>Volume : <strong id="volVal">--</strong></p>
+                    <p>Débit : <strong id="tempoVal">--</strong></p>
+                    <p>Silences : <strong id="pauseVal">--</strong></p>
                 </div>
 
                 <div class="card">
-                    <h3>Tics de Langage</h3>
+                    <h3>Analyse du comportement</h3>
+                    <p>Humeur : <span id="sentimentVal">--</span></p>
+                    <p>État Vocal : <strong id="emotionLabel">--</strong></p>
+                </div>
+
+                <div class="card">
+                    <h3>Tics de langage</h3>
                     <ul id="fillersList"></ul>
                 </div>
 

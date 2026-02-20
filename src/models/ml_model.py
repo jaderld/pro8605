@@ -1,86 +1,87 @@
-import os
-import pickle
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import r2_score, mean_absolute_error
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, r2_score
+import joblib
 import mlflow
-import mlflow.sklearn
+import os
 
 class ScoringModel:
-    def __init__(self, model_path='storage/models/scoring_rf.pkl'):
+    def __init__(self, model_path="storage/models/scoring_rf.joblib"):
         self.model_path = model_path
-        # On remplace la LogisticRegression par un RandomForestRegressor pour avoir une note sur 100
-        self.model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
-        self._load_model()
-
-    def _load_model(self):
-        """Charge le modèle s'il existe déjà sur le disque."""
-        if os.path.exists(self.model_path):
-            with open(self.model_path, 'rb') as f:
-                self.model = pickle.load(f)
-            print("Modèle ML chargé avec succès.")
-        else:
-            print("Aucun modèle ML trouvé. L'entraînement est nécessaire.")
-
-    def train(self, df: pd.DataFrame):
-        print("Début de l'entraînement du modèle ML.")
+        self.model = None
         
-        features = ['filler_count', 'pause_ratio', 'sentiment']
-        target = 'target_score'
-        X = df[features]
-        y = df[target]
+        if os.path.exists(self.model_path):
+            self.model = joblib.load(self.model_path)
+            print("✅ Modèle Random Forest chargé.")
+        else:
+            print("ℹ️ Aucun modèle de scoring trouvé. Entraînement requis.")
 
+    def train(self, df):
+        """Entraîne la Random Forest pour prédire le score final (0-100)."""
+        print("🚀 Entraînement du Random Forest Regressor...")
+
+        # 1. Sélection des Features (Le "Vecteur de Fusion")
+        # On utilise tout : Audio + NLP + Emotion (stress_level)
+        features = ['volume', 'tempo', 'pause_ratio', 'sentiment', 'filler_count', 'stress_level']
+        X = df[features]
+        y = df['target_score']
+
+        # 2. Split Train/Test pour avoir de VRAIES métriques
+        # C'est crucial pour ne pas avoir 100% d'accuracy
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Configurer l'URI de tracking
+        # 3. Configuration du modèle
+        self.model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
+        
+        # 4. Logging MLflow
         mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
-        mlflow.set_experiment("Interview_Scoring")
+        mlflow.set_experiment("Final_Scoring_ML")
 
         with mlflow.start_run():
-            # Entraînement
             self.model.fit(X_train, y_train)
-
-            # Évaluation
+            
+            # Prédictions sur le jeu de test
             predictions = self.model.predict(X_test)
+            
+            # Calcul des métriques
+            mae = mean_absolute_error(y_test, predictions)
             r2 = r2_score(y_test, predictions)
+
+            # Sauvegarde du modèle
+            os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
+            joblib.dump(self.model, self.model_path)
+
+            # Log dans MLflow
+            mlflow.log_params({"n_estimators": 100, "max_depth": 10})
+            mlflow.log_metric("mae", mae)
+            mlflow.log_metric("r2", r2)
+
+            print(f"✅ Entraînement ML terminé. MAE: {mae:.2f}, R2: {r2:.2f}")
+
+            # --- C'EST CETTE LIGNE QUI MANQUAIT À TON API ---
+            return {
+                "mae": round(float(mae), 4),
+                "r2": round(float(r2), 4)
+            }
+
+    def predict_score(self, audio_features, nlp_results, emotion_data):
+        """Inférence : Fusionne les données en temps réel pour sortir la note."""
+        if self.model is None:
+            return 50.0 # Score par défaut si pas de modèle
             
-            # --- CORRECTION ICI ---
-            # On log les paramètres et métriques individuellement
-            mlflow.log_param("model_type", "RandomForest")
-            mlflow.log_metric("r2_score", r2)
-            
-            # Au lieu de log_model qui peut échouer en 404, on log juste l'artefact 
-            # ou on utilise une version simplifiée :
-            try:
-                mlflow.sklearn.log_model(self.model, "model")
-            except Exception as e:
-                print(f"⚠️ Warning: Impossible de loguer le modèle complet sur MLflow: {e}")
-            # -----------------------
-
-            print(f"✅ Entraînement terminé. R2 Score : {r2:.2f}")
-
-        # 3. Sauvegarde physique du modèle (comme ton ancien save)
-        os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
-        with open(self.model_path, 'wb') as f:
-            pickle.dump(self.model, f)
-        print(f"💾 Modèle sauvegardé dans {self.model_path}")
-
-    def predict_score(self, audio_features: dict, nlp_results: dict) -> float:
-        """
-        Méthode utilisée par l'API pour noter un nouveau candidat en temps réel.
-        """
-        # Sécurité au cas où l'API est appelée avant l'entraînement
-        if not hasattr(self.model, 'estimators_'):
-            return 50.0 
-
-        # Formatage des données reçues de l'API
+        # Reconstruction du vecteur de fusion identique à l'entraînement
+        # Note : emotion_data['emotion'] est converti en 1.0 (Stressé) ou 0.0 (Calme)
+        stress_val = 1.0 if emotion_data.get('emotion') == "Stressé" else 0.0
+        
         input_data = pd.DataFrame([{
+            'volume': audio_features.get('volume', 0),
+            'tempo': audio_features.get('tempo', 0),
+            'pause_ratio': audio_features.get('pause_ratio', 0),
+            'sentiment': nlp_results.get('sentiment_score', 0),
             'filler_count': nlp_results.get('filler_count', 0),
-            'pause_ratio': audio_features.get('pause_ratio', 0.1),
-            'sentiment': nlp_results.get('sentiment_score', 0.0)
+            'stress_level': stress_val
         }])
 
-        # Prédiction de la note
-        score = self.model.predict(input_data)[0]
-        return round(float(score), 2)
+        return self.model.predict(input_data)[0]

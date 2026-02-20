@@ -13,7 +13,7 @@ class NLPEngine:
         self.config = self._load_config(config_path)
         
         # Liste des fillers
-        raw_fillers = self.config.get('nlp', {}).get('fillers', ["euh", "bah", "ben", "genre", "voilà"])
+        raw_fillers = self.config.get('nlp', {}).get('fillers', ["euh", "bah", "ben", "genre", "voilà", "en fait", "du coup", "enfin"])
         self.fillers_regex = [r"\b" + f + r"\b" for f in raw_fillers]
 
     def _load_config(self, path):

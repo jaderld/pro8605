@@ -8,11 +8,13 @@ import time
 import re
 import librosa
 import numpy as np
+import pandas as pd
+from sklearn.metrics import accuracy_score, f1_score
 from src.monitoring.metrics import TRANSCRIPTION_TIME, AUDIO_STRESS_LEVEL
 
 # --- FONCTION PRECLEAN ---
 def preclean(text: str) -> str:
-    """Nettoie les erreurs classiques de l'ASR avant le passage au NLP."""
+    """Nettoyage normalisant pour éviter les erreurs de parsing du moteur NLP."""
     t = text.lower()
     t = re.sub(r"(\d)([a-z])", r"\1 \2", t)
     t = re.sub(r"([a-z])(\d)", r"\1 \2", t)
@@ -20,6 +22,7 @@ def preclean(text: str) -> str:
     t = re.sub(r"\s+", " ", t).strip()
     return t
 
+# --- ARCHITECTURE DU RÉSEAU DE NEURONES ---
 class SimpleAudioNet(nn.Module):
     def __init__(self, input_dim, num_classes):
         super(SimpleAudioNet, self).__init__()
@@ -38,39 +41,35 @@ class SimpleAudioNet(nn.Module):
         x = self.fc3(x)
         return x
 
+# --- CLASSE PRINCIPALE DU MODÈLE ---
 class InterviewModel:
     def __init__(self, model_path="storage/models/emotion_net.pth"):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Chargement de Whisper sur {self.device}...")
         self.transcriber = whisper.load_model("base", device=self.device)
         
-        self.classifier = SimpleAudioNet(input_dim=5, num_classes=3).to(self.device)
+        # Configuration Binaire : 2 classes (Calme = 0, Stressé = 1)
+        self.classifier = SimpleAudioNet(input_dim=5, num_classes=2).to(self.device)
         self.classifier.eval()
         
         if os.path.exists(model_path):
-            self.classifier.load_state_dict(torch.load(model_path, map_location=self.device))
-            print("Modèle d'émotion personnalisé chargé.")
+            try:
+                self.classifier.load_state_dict(torch.load(model_path, map_location=self.device))
+                print("✅ Modèle d'émotion personnalisé (2 classes) chargé.")
+            except Exception as e:
+                print(f"⚠️ Erreur : {e}. Architecture incompatible ou fichier corrompu.")
         else:
-            print("Aucun modèle d'émotion trouvé, utilisation des poids initiaux.")
+            print("ℹ️ Aucun modèle d'émotion trouvé, utilisation des poids par défaut.")
 
     def transcribe_audio(self, audio_path):
-        """
-        Transcription intégrale AVEC conservation des tics de langage (euh, bah, voilà).
-        """
+        """Transcription via Whisper avec Prompt Engineering pour les tics."""
         start_time = time.time()
-        
-        # 1. On charge l'audio complet (Whisper a besoin du contexte total)
         audio, sr = librosa.load(audio_path, sr=16000)
         audio_duration_s = len(audio) / sr
 
-        # 2. PROMPT MAGIQUE : On "apprend" à Whisper à ne pas censurer les hésitations
+        # Prompt pour forcer Whisper à transcrire les hésitations sans les censurer
         tic_prompt = "C'est un entretien d'embauche. Le candidat hésite souvent, il dit euh, bah, voilà, du coup."
 
-        print(f"🎙️ Whisper analyse l'audio complet ({audio_duration_s:.1f}s)...")
-        
-        # 3. Inférence Whisper
-        # initial_prompt : la clé pour garder les 'euh'
-        # language="fr" : évite qu'il traduise les tics en anglais
         res = self.transcriber.transcribe(
             audio, 
             fp16=False, 
@@ -78,40 +77,106 @@ class InterviewModel:
             initial_prompt=tic_prompt
         )
         
-        raw_text = res["text"]
-
-        # 4. Nettoyage léger (Preclean)
-        cleaned_text = preclean(raw_text)
-
-        # Calcul du RTF (Real Time Factor)
-        elapsed_s = time.time() - start_time
-        rtf = elapsed_s / max(audio_duration_s, 1e-9)
-        print(f"⏱️ ASR Terminé. RTF: {rtf:.3f} | Texte: {cleaned_text[:50]}...")
+        cleaned_text = preclean(res["text"])
         
+        elapsed_s = time.time() - start_time
         TRANSCRIPTION_TIME.observe(elapsed_s)
         
         return cleaned_text
 
     def predict_emotion(self, features):
+        """Inférence PyTorch pour la classification d'émotion."""
+        self.classifier.eval()
         input_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).to(self.device)
+        
         with torch.no_grad():
             outputs = self.classifier(input_tensor)
             probabilities = torch.softmax(outputs, dim=1)
             predicted_class = torch.argmax(probabilities, dim=1).item()
             confidence = probabilities[0][predicted_class].item()
         
-        classes = {0: "Calme", 1: "Neutre", 2: "Stressé"}
+        classes = {0: "Calme", 1: "Stressé"}
         result_label = classes.get(predicted_class, "Inconnu")
         
+        # Monitoring MLflow et Prometheus
         try:
             mlflow.log_metric("emotion_confidence", confidence)
-        except:
-            pass
+        except: pass
             
-        stress_val = 1.0 if result_label == "Stressé" else (0.5 if result_label == "Neutre" else 0.0)
+        stress_val = 1.0 if result_label == "Stressé" else 0.0
         AUDIO_STRESS_LEVEL.set(stress_val)
         
-        return {
-            "emotion": result_label,
-            "confidence": round(confidence, 4)
-        }
+        return {"emotion": result_label, "confidence": round(confidence, 4)}
+
+    def train_custom_model(self, df, epochs=50, batch_size=16):
+        """Entraînement MLOps avec calcul d'Accuracy et F1-Score."""
+        print("🚀 Début de l'entraînement du modèle d'émotion (Architecture Binaire)...")
+        self.classifier.train() 
+        
+        X, y = [], []
+        
+        # 1. Préparation des données (Lecture directe du vecteur complet depuis le CSV)
+        for _, row in df.iterrows():
+            X.append([
+                row['volume'], 
+                row['zcr'], 
+                row['spectral_centroid'], 
+                row['tempo'] / 200.0, 
+                row['pause_ratio']
+            ])
+            y.append(int(row['label']))
+            
+        X_tensor = torch.tensor(X, dtype=torch.float32).to(self.device)
+        y_tensor = torch.tensor(y, dtype=torch.long).to(self.device)
+        
+        dataset = torch.utils.data.TensorDataset(X_tensor, y_tensor)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(self.classifier.parameters(), lr=0.001)
+        
+        mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
+        mlflow.set_experiment("Emotion_Audio_DL")
+        
+        with mlflow.start_run():
+            # Boucle d'entraînement
+            for epoch in range(epochs):
+                total_loss = 0
+                for batch_x, batch_y in dataloader:
+                    optimizer.zero_grad()
+                    outputs = self.classifier(batch_x)
+                    loss = criterion(outputs, batch_y)
+                    loss.backward()
+                    optimizer.step()
+                    total_loss += loss.item()
+            
+            # Phase d'évaluation pour MLflow
+            self.classifier.eval()
+            with torch.no_grad():
+                outputs = self.classifier(X_tensor)
+                _, predicted = torch.max(outputs.data, 1)
+                all_preds = predicted.cpu().numpy()
+                all_labels = y_tensor.cpu().numpy()
+                
+            accuracy = accuracy_score(all_labels, all_preds)
+            f1 = f1_score(all_labels, all_preds, average='weighted')
+            
+            # Sauvegarde et Logging
+            model_path = "storage/models/emotion_net.pth"
+            os.makedirs(os.path.dirname(model_path), exist_ok=True)
+            torch.save(self.classifier.state_dict(), model_path)
+            
+            mlflow.log_param("epochs", epochs)
+            mlflow.log_param("batch_size", batch_size)
+            mlflow.log_metric("final_loss", total_loss/len(dataloader))
+            mlflow.log_metric("accuracy", accuracy)
+            mlflow.log_metric("f1_score", f1)
+            
+            print(f"✅ Entraînement terminé. Accuracy: {accuracy:.2f}, F1: {f1:.2f}")
+            
+            return {
+                "status": "success", 
+                "loss": round(total_loss/len(dataloader), 4),
+                "accuracy": round(accuracy, 4),
+                "f1_score": round(f1, 4)
+            }
