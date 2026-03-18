@@ -1,28 +1,39 @@
+
 let mediaRecorder;
 let audioChunks = [];
 const recordBtn = document.getElementById('recordBtn');
+const btnLabel = document.getElementById('btnLabel');
 const statusTxt = document.getElementById('status');
+const loader = document.getElementById('loader');
 const resultsDiv = document.getElementById('results');
 
 recordBtn.addEventListener('click', async () => {
-    if (recordBtn.textContent.includes('Démarrer')) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
 
-        mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
-        mediaRecorder.onstop = sendAudioToAPI;
+            mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+            mediaRecorder.onstop = sendAudioToAPI;
 
-        mediaRecorder.start();
-        recordBtn.textContent = "🛑 Arrêter l'Enregistrement";
-        recordBtn.classList.replace('start', 'stop');
-        statusTxt.textContent = "Enregistrement en cours...";
-        resultsDiv.classList.add('hidden');
-    } else {
+            mediaRecorder.start();
+            recordBtn.classList.add('stop');
+            recordBtn.classList.remove('start');
+            btnLabel.textContent = "Arrêter l'enregistrement";
+            statusTxt.textContent = "Enregistrement en cours...";
+            loader.classList.remove('hidden');
+            resultsDiv.classList.add('hidden');
+        } catch (err) {
+            statusTxt.textContent = "Erreur accès au micro : " + err.message;
+        }
+    } else if (mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
-        recordBtn.textContent = "🎤 Démarrer l'Enregistrement";
-        recordBtn.classList.replace('stop', 'start');
+        recordBtn.classList.remove('stop');
+        recordBtn.classList.add('start');
+        btnLabel.textContent = "Démarrer l'analyse";
         statusTxt.textContent = "L'IA analyse votre voix... ⏳";
+        loader.classList.remove('hidden');
     }
 });
 
@@ -42,10 +53,11 @@ async function sendAudioToAPI() {
         const data = await response.json();
         displayResults(data);
         statusTxt.textContent = "Analyse terminée avec succès !";
-
+        loader.classList.add('hidden');
     } catch (error) {
         console.error(error);
         statusTxt.textContent = "Erreur : " + error.message;
+        loader.classList.add('hidden');
     }
 }
 
@@ -57,7 +69,6 @@ function displayResults(data) {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
-
     // 1. Score & Interpretation
     update('globalScore', (data.final_score || 0) + "/100");
     update('interpretation', data.interpretation || "Analyse en cours");
@@ -92,5 +103,11 @@ function displayResults(data) {
                 list.appendChild(li);
             }
         }
+    }
+
+    // 6. Affichage automatique du rapport LLM
+    const llmReport = document.getElementById('llmReport');
+    if (llmReport) {
+        llmReport.textContent = data.llm_report || 'Rapport LLM non disponible.';
     }
 }

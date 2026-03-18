@@ -2,11 +2,12 @@ import os
 import shutil
 import tempfile
 import logging
-import pandas as pd # <-- AJOUTÉ POUR LES ROUTES TRAIN
+import pandas as pd
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import make_asgi_app
+from transformers import pipeline
 
 # --- Imports internes ---
 from src.processors.audio_engine import AudioEngine
@@ -32,41 +33,14 @@ async def serve_frontend():
     return FileResponse('api/static/index.html')
 
 # ==========================================
-# 🚀 ROUTES D'ENTRAÎNEMENT MLOPS (AJOUTÉES)
+# ROUTES D'ENTRAÎNEMENT MLOPS
 # ==========================================
 
-@app.post("/ml/train/", tags=["MLOps"])
-async def train_ml_model():
-    """Déclenche le ré-entraînement du Random Forest (Score final)"""
-    try:
-        csv_path = 'storage/fake_sessions.csv'
-        if not os.path.exists(csv_path):
-            return JSONResponse(status_code=404, content={"error": "Fichier dataset introuvable."})
-            
-        df = pd.read_csv(csv_path)
-        metrics = ml_model.train(df)
-        
-        return {"message": "Random Forest ré-entraîné avec succès !", "metrics": metrics}
-    except Exception as e:
-        logger.error(f"Erreur Entraînement ML : {str(e)}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
+# ==========================================
+# ROUTE LLM
+# ==========================================
+from fastapi import Body
 
-@app.post("/dl/train/", tags=["MLOps"])
-async def train_dl_model():
-    """Déclenche le ré-entraînement du modèle PyTorch (Émotion binaire)"""
-    try:
-        csv_path = 'storage/fake_sessions.csv'
-        if not os.path.exists(csv_path):
-            return JSONResponse(status_code=404, content={"error": "Fichier dataset introuvable."})
-            
-        df = pd.read_csv(csv_path)
-        # On appelle la fonction d'entraînement de PyTorch
-        metrics = dl_model.train_custom_model(df)
-        
-        return {"message": "Modèle PyTorch (Binaire) ré-entraîné avec succès !", "metrics": metrics}
-    except Exception as e:
-        logger.error(f"Erreur Entraînement DL : {str(e)}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ==========================================
 # 🎤 ROUTE D'INFÉRENCE PRINCIPALE
@@ -110,7 +84,8 @@ async def analyze_file(file: UploadFile = File(...)):
         vol_percent = round(vol_raw * 1000, 1)
         vol_display = f"{vol_percent}%"
 
-        # 5. RÉSULTAT FINAL
+
+        # 5. RÉSULTAT FINAL (sans rapport LLM)
         full_analysis = {
             "final_score": round(final_score, 2),
             "interpretation": "Excellent" if final_score > 75 else ("Moyen" if final_score > 45 else "À améliorer"),
@@ -130,6 +105,67 @@ async def analyze_file(file: UploadFile = File(...)):
                 }
             }
         }
+
+        # 6. Génération automatique du rapport LLM
+
+        try:
+            from transformers import pipeline
+            score = full_analysis.get('final_score', '--')
+            sentiment = full_analysis.get('details', {}).get('text_analysis', {}).get('sentiment', '--')
+            stress = full_analysis.get('details', {}).get('emotion_analysis', {}).get('label', '--')
+            volume = full_analysis.get('details', {}).get('audio_analysis', {}).get('volume', '--')
+            tempo = full_analysis.get('details', {}).get('audio_analysis', {}).get('tempo_bpm', '--')
+            pause_ratio = full_analysis.get('details', {}).get('audio_analysis', {}).get('pause_ratio', '--')
+            fillers = full_analysis.get('details', {}).get('text_analysis', {}).get('fillers', {})
+            filler_count = sum(fillers.values()) if isinstance(fillers, dict) else fillers or 0
+            transcription = full_analysis.get('details', {}).get('text_analysis', {}).get('transcription', '--')
+
+            prompt = f"""
+Tu es un assistant RH expert en analyse d’entretiens.
+À partir des données suivantes issues d’un entretien simulé (scores, métriques, transcription), génère un rapport détaillé et professionnel comprenant :
+
+1. Résumé global
+2. Analyse des scores (avec explications)
+3. Analyse de la transcription
+4. Feedback personnalisé (points forts, axes d’amélioration, points problématiques)
+5. Conseils pratiques
+
+Données d’entrée :
+- Score final : {score}
+- Sentiment : {sentiment}
+- Stress détecté : {stress}
+- Volume : {volume}
+- Tempo : {tempo}
+- Ratio de pauses : {pause_ratio}
+- Nombre de tics de langage : {filler_count}
+- Transcription : {transcription}
+
+Sois factuel, bienveillant, pédagogique et justifie chaque remarque.
+"""
+            # Utilisation d'un modèle instruction-following (TinyLlama ou Zephyr)
+            # Pour TinyLlama : "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+            # Pour Zephyr : "HuggingFaceH4/zephyr-7b-beta"
+            # On prend TinyLlama pour la légèreté (modèle 1.1B, fonctionne sur CPU)
+            hf_token = os.getenv("HF_TOKEN")
+            generator = pipeline(
+                "text-generation",
+                model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+                # tokenizer n'est pas obligatoire si auto-détecté, sinon :
+                # tokenizer="TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+                max_new_tokens=512,
+                do_sample=True,
+                temperature=0.7,
+                use_auth_token=hf_token if hf_token else None
+            )
+            # Format prompt type chat/instruction
+            prompt_instruction = f"""<|system|>Tu es un assistant RH expert en analyse d’entretiens.<|end|>\n<|user|>À partir des données suivantes issues d’un entretien simulé (scores, métriques, transcription), génère un rapport détaillé et professionnel comprenant :\n1. Résumé global\n2. Analyse des scores (avec explications)\n3. Analyse de la transcription\n4. Feedback personnalisé (points forts, axes d’amélioration, points problématiques)\n5. Conseils pratiques\n\nDonnées d’entrée :\n- Score final : {score}\n- Sentiment : {sentiment}\n- Stress détecté : {stress}\n- Volume : {volume}\n- Tempo : {tempo}\n- Ratio de pauses : {pause_ratio}\n- Nombre de tics de langage : {filler_count}\n- Transcription : {transcription}\n\nSois factuel, bienveillant, pédagogique et justifie chaque remarque.<|end|>\n<|assistant|>"""
+            outputs = generator(prompt_instruction)
+            rapport = outputs[0]["generated_text"].split("<|assistant|>")[-1].strip()
+            full_analysis["llm_report"] = rapport
+        except Exception as e:
+            logger.error(f"Erreur génération rapport LLM : {str(e)}")
+            full_analysis["llm_report"] = "Erreur lors de la génération du rapport LLM."
+
         return JSONResponse(content=full_analysis)
 
     except Exception as e:

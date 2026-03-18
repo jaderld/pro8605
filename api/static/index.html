@@ -3,54 +3,948 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InterviewFlow AI | Analyseur de Soft Skills</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>PRO8605 — Analyse Soft Skills</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ink:       #0E1218;
+            --ink-70:    rgba(14,18,24,.82);
+            --ink-30:    rgba(14,18,24,.48);
+            --ink-10:    rgba(14,18,24,.09);
+            --bg:        #EAE6DE;
+            --surface:   #F7F5F1;
+            --gold:      #A67C28;
+            --gold-lt:   #F0E2C0;
+            --gold-line: #C9A24E;
+            --green:     #1E4A39;
+            --green-lt:  #D4E8DE;
+            --red:       #8B2222;
+            --line:      rgba(14,18,24,.18);
+            --serif:     'Cormorant Garamond', Georgia, serif;
+            --sans:      'Figtree', sans-serif;
+            --r:         6px;
+        }
+
+        html { font-size: 14px; scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        /* ─── TOPBAR ─────────────────────────────────── */
+        .topbar {
+            background: var(--ink);
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .topbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .logo-mark {
+            width: 22px; height: 22px;
+            border: 1.5px solid var(--gold-line);
+            border-radius: 3px;
+            display: grid;
+            place-items: center;
+        }
+
+        .logo-mark svg {
+            width: 10px; height: 10px;
+            fill: none;
+            stroke: var(--gold-line);
+            stroke-width: 1.8;
+        }
+
+        .topbar-name {
+            font-family: var(--serif);
+            font-size: 1rem;
+            font-weight: 500;
+            color: #fff;
+            letter-spacing: 0.04em;
+        }
+
+        .topbar-divider {
+            width: 1px; height: 16px;
+            background: rgba(255,255,255,.15);
+        }
+
+        .topbar-sub {
+            font-size: 0.69rem;
+            font-weight: 400;
+            color: rgba(255,255,255,.6);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .topbar-right {
+            font-size: 0.66rem;
+            font-weight: 400;
+            color: rgba(255,255,255,.45);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        /* ─── HERO BAND ──────────────────────────────── */
+        .hero-band {
+            background: var(--ink);
+            padding: 52px 40px 48px;
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 48px;
+            align-items: end;
+            border-bottom: 1px solid rgba(255,255,255,.1);
+        }
+
+        .hero-kicker {
+            font-size: 0.66rem;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold-line);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hero-kicker::before {
+            content: '';
+            display: block;
+            width: 24px; height: 1px;
+            background: var(--gold-line);
+        }
+
+        .hero-title {
+            font-family: var(--serif);
+            font-size: 2.8rem;
+            font-weight: 400;
+            color: #fff;
+            line-height: 1.18;
+            letter-spacing: -0.01em;
+            margin-bottom: 16px;
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: rgba(255,255,255,.72);
+        }
+
+        .hero-desc {
+            font-size: 0.82rem;
+            font-weight: 400;
+            color: rgba(255,255,255,.62);
+            line-height: 1.75;
+            max-width: 480px;
+        }
+
+        /* ─── RECORDER WIDGET (hero right) ──────────── */
+        .recorder-widget {
+            background: rgba(255,255,255,.07);
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: var(--r);
+            padding: 28px 28px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .widget-label {
+            font-size: 0.63rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.5);
+            margin-bottom: 22px;
+        }
+
+        .widget-center {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Button */
+        #recordBtn {
+            position: relative;
+            width: 56px; height: 56px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            border: 1.5px solid rgba(184,147,58,.5);
+            background: rgba(184,147,58,.08);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+        }
+
+        #recordBtn::after {
+            content: '';
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: var(--gold);
+            transition: border-radius 0.25s, background 0.25s, transform 0.2s;
+        }
+
+        #recordBtn:hover {
+            border-color: var(--gold-line);
+            background: rgba(184,147,58,.14);
+            box-shadow: 0 0 0 8px rgba(184,147,58,.08);
+        }
+
+        #recordBtn.stop {
+            border-color: rgba(155,43,43,.6);
+            background: rgba(155,43,43,.1);
+        }
+
+        #recordBtn.stop::after {
+            border-radius: 3px;
+            background: var(--red);
+            transform: scale(0.85);
+        }
+
+        #recordBtn.stop:hover {
+            box-shadow: 0 0 0 8px rgba(155,43,43,.1);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            border: 1px solid rgba(155,43,43,.5);
+            opacity: 0;
+        }
+
+        #recordBtn.stop .pulse-ring { animation: pulse 2s ease-out infinite; }
+
+        @keyframes pulse {
+            0%   { transform: scale(1);    opacity: .55; }
+            100% { transform: scale(1.6);  opacity: 0; }
+        }
+
+        .widget-text {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        #btnLabel {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        #status {
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: rgba(255,255,255,.52);
+        }
+
+        .loader {
+            width: 14px; height: 14px;
+            border: 1.5px solid rgba(255,255,255,.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+
+        /* Waveform decoration */
+        .widget-wave {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 28px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255,255,255,.13);
+        }
+
+        .wave-bar {
+            flex: 1;
+            border-radius: 2px;
+            background: rgba(184,147,58,.42);
+            transition: height 0.15s ease;
+        }
+
+        #recordBtn.stop ~ .widget-wave .wave-bar {
+            animation: waveDance 0.8s ease-in-out infinite alternate;
+        }
+
+        .wave-bar:nth-child(1)  { height: 30%; animation-delay: 0s; }
+        .wave-bar:nth-child(2)  { height: 60%; animation-delay: .05s; }
+        .wave-bar:nth-child(3)  { height: 80%; animation-delay: .1s; }
+        .wave-bar:nth-child(4)  { height: 45%; animation-delay: .15s; }
+        .wave-bar:nth-child(5)  { height: 90%; animation-delay: .2s; }
+        .wave-bar:nth-child(6)  { height: 55%; animation-delay: .25s; }
+        .wave-bar:nth-child(7)  { height: 70%; animation-delay: .3s; }
+        .wave-bar:nth-child(8)  { height: 40%; animation-delay: .35s; }
+        .wave-bar:nth-child(9)  { height: 85%; animation-delay: .4s; }
+        .wave-bar:nth-child(10) { height: 30%; animation-delay: .45s; }
+        .wave-bar:nth-child(11) { height: 65%; animation-delay: .5s; }
+        .wave-bar:nth-child(12) { height: 50%; animation-delay: .55s; }
+        .wave-bar:nth-child(13) { height: 75%; animation-delay: .6s; }
+        .wave-bar:nth-child(14) { height: 35%; animation-delay: .65s; }
+        .wave-bar:nth-child(15) { height: 55%; animation-delay: .7s; }
+
+        @keyframes waveDance {
+            from { height: 15%; }
+            to   { height: 100%; }
+        }
+
+        /* ─── MAIN ───────────────────────────────────── */
+        .main {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 44px 40px 100px;
+        }
+
+        /* ─── RESULTS ────────────────────────────────── */
+        #results {
+            animation: fadeUp .45s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Section titles */
+        .section-heading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .section-heading h2 {
+            font-family: var(--serif);
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        .section-heading-line {
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        .section-heading-tag {
+            font-size: 0.63rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--gold);
+            background: var(--gold-lt);
+            padding: 3px 9px;
+            border-radius: 20px;
+        }
+
+        /* ─── OVERVIEW ROW ───────────────────────────── */
+        .overview-row {
+            display: grid;
+            grid-template-columns: 220px 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        /* Score tile */
+        .score-tile {
+            background: var(--ink);
+            border-radius: var(--r);
+            padding: 28px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 180px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-tile::before {
+            content: '';
+            position: absolute;
+            bottom: -30px; right: -30px;
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            border: 1px solid rgba(184,147,58,.22);
+        }
+
+        .score-tile::after {
+            content: '';
+            position: absolute;
+            bottom: -10px; right: -10px;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 1px solid rgba(184,147,58,.14);
+        }
+
+        .score-tile-label {
+            font-size: 0.63rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.5);
+        }
+
+        .score-big {
+            font-family: var(--serif);
+            font-size: 4rem;
+            font-weight: 500;
+            color: #fff;
+            line-height: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .score-big sub {
+            font-family: var(--sans);
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: rgba(255,255,255,.52);
+            vertical-align: baseline;
+        }
+
+        #interpretation {
+            font-size: 0.69rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            color: var(--gold-line);
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Metric panels */
+        .metric-panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            padding: 24px 24px 20px;
+            box-shadow: 0 1px 3px rgba(14,18,24,.08), 0 4px 16px rgba(14,18,24,.07);
+        }
+
+        .metric-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .metric-panel-title {
+            font-family: var(--serif);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        .metric-icon {
+            width: 28px; height: 28px;
+            border-radius: 6px;
+            display: grid;
+            place-items: center;
+        }
+
+        .metric-icon.voice { background: var(--green-lt); }
+        .metric-icon.behaviour { background: var(--gold-lt); }
+
+        .metric-icon svg {
+            width: 13px; height: 13px;
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+        }
+
+        .metric-icon.voice svg { stroke: var(--green); }
+        .metric-icon.behaviour svg { stroke: var(--gold); }
+
+        .metric-rows { display: flex; flex-direction: column; }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .metric-row:last-child { border-bottom: none; }
+
+        .metric-key {
+            font-size: 0.77rem;
+            color: var(--ink-70);
+            font-weight: 400;
+        }
+
+        .metric-val {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        /* ─── LANGUAGE TICS ──────────────────────────── */
+        .tics-row {
+            margin-bottom: 40px;
+        }
+
+        .tics-panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            padding: 24px;
+            box-shadow: 0 1px 2px rgba(20,24,32,.04);
+        }
+
+        .tics-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .tics-panel-title {
+            font-family: var(--serif);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--ink);
+        }
+
+        .tics-hint {
+            font-size: 0.68rem;
+            color: var(--ink-30);
+        }
+
+        #fillersList {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        #fillersList li {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 5px 13px;
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            color: var(--ink-70);
+            transition: border-color .15s, color .15s;
+        }
+
+        #fillersList li:hover {
+            border-color: var(--gold-line);
+            color: var(--gold);
+        }
+
+        /* ─── TRANSCRIPTION ──────────────────────────── */
+        .transcript-row {
+            margin-bottom: 40px;
+        }
+
+        .transcript-panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--r);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(14,18,24,.08), 0 4px 16px rgba(14,18,24,.07);
+        }
+
+        .transcript-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .transcript-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--gold);
+            flex-shrink: 0;
+        }
+
+        .transcript-bar-title {
+            font-family: var(--serif);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--ink);
+            flex: 1;
+        }
+
+        .transcript-tag {
+            font-size: 0.63rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-30);
+        }
+
+        #transcriptionText {
+            padding: 24px;
+            font-size: 0.85rem;
+            line-height: 1.85;
+            color: var(--ink-70);
+        }
+
+        /* ─── REPORT ─────────────────────────────────── */
+        .report-panel {
+            background: var(--ink);
+            border-radius: var(--r);
+            overflow: hidden;
+        }
+
+        .report-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(255,255,255,.12);
+        }
+
+        .report-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .report-title-group span {
+            font-family: var(--serif);
+            font-size: 1rem;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .report-badge {
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 20px;
+            background: rgba(184,147,58,.15);
+            color: var(--gold-line);
+            border: 1px solid rgba(184,147,58,.2);
+        }
+
+        .report-actions { display: flex; gap: 8px; }
+
+        .btn-outline {
+            font-family: var(--sans);
+            font-size: 0.69rem;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,.22);
+            background: transparent;
+            color: rgba(255,255,255,.68);
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            transition: border-color .15s, color .15s;
+        }
+
+        .btn-outline:hover {
+            border-color: var(--gold-line);
+            color: var(--gold-line);
+        }
+
+        #llmReport {
+            padding: 28px 24px;
+            font-family: var(--sans);
+            font-size: 0.81rem;
+            line-height: 1.9;
+            color: rgba(255,255,255,.68);
+            white-space: pre-wrap;
+            background: none;
+            border: none;
+        }
+
+        /* ─── FOOTER ─────────────────────────────────── */
+        .site-footer {
+            background: var(--ink);
+            border-top: 1px solid rgba(255,255,255,.06);
+            padding: 22px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-left span {
+            font-family: var(--serif);
+            font-size: 0.88rem;
+            color: rgba(255,255,255,.55);
+        }
+
+        .footer-sep {
+            width: 1px; height: 12px;
+            background: rgba(255,255,255,.2);
+        }
+
+        .footer-right {
+            font-size: 0.66rem;
+            color: rgba(255,255,255,.35);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        /* ─── RESPONSIVE ─────────────────────────────── */
+        @media (max-width: 860px) {
+            .topbar { padding: 0 20px; }
+            .hero-band { grid-template-columns: 1fr; padding: 36px 20px 32px; gap: 28px; }
+            .hero-title { font-size: 2rem; }
+            .main { padding: 28px 20px 80px; }
+            .overview-row { grid-template-columns: 1fr; }
+            .score-tile { min-height: 140px; flex-direction: row; align-items: center; }
+            .site-footer { padding: 18px 20px; flex-direction: column; gap: 6px; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>PRO8605 : Simulateur d'entretien - analyse soft skills 🎙️</h1>
-            <p>Analyse en temps réel : Voix, discours & émotions</p>
-        </header>
 
-        <main>
-            <div class="recorder-section">
-                <button id="recordBtn" class="btn start">🎤 Démarrer l'enregistrement</button>
-                <p id="status">Prêt pour l'analyse</p>
+    <!-- TOPBAR -->
+    <nav class="topbar">
+        <div class="topbar-left">
+            <div class="topbar-logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 10 10">
+                        <path d="M1 5h8M5 1v8" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <span class="topbar-name">PRO8605</span>
+            </div>
+            <div class="topbar-divider"></div>
+            <span class="topbar-sub">Analyse Soft Skills</span>
+        </div>
+        <span class="topbar-right">Projet de Fin d'Études</span>
+    </nav>
+
+    <!-- HERO BAND -->
+    <section class="hero-band">
+        <div class="hero-copy">
+            <div class="hero-kicker">Simulateur d'entretien professionnel</div>
+            <h1 class="hero-title">
+                Évaluez vos<br>
+                compétences <em>comportementales</em>
+            </h1>
+            <p class="hero-desc">
+                Enregistrez une prise de parole et obtenez une analyse complète de vos soft skills —
+                diction, rythme vocal, gestion des silences, sentiment et tics de langage.
+                Conçu pour les candidats comme pour les équipes RH.
+            </p>
+        </div>
+
+        <div class="recorder-widget">
+            <div class="widget-label">Enregistrement audio</div>
+            <div class="widget-center">
+                <button id="recordBtn" class="start" aria-label="Démarrer l'enregistrement">
+                    <div class="pulse-ring"></div>
+                </button>
+                <div class="widget-text">
+                    <span id="btnLabel">Démarrer l'analyse</span>
+                    <span id="status">Microphone prêt</span>
+                    <span id="loader" class="loader hidden"></span>
+                </div>
+            </div>
+            <div class="widget-wave">
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN RESULTS -->
+    <main class="main">
+        <div id="results" class="hidden">
+
+            <!-- Overview -->
+            <div class="section-heading">
+                <h2>Vue d'ensemble</h2>
+                <div class="section-heading-line"></div>
+                <span class="section-heading-tag">Métriques</span>
             </div>
 
-            <div id="results" class="results-grid hidden">
-                <div class="card score-card">
-                    <h3>Score Final</h3>
-                    <div class="score-circle" id="globalScore">--</div>
-                    <p id="interpretation" class="badge">--</p>
+            <div class="overview-row">
+
+                <!-- Score -->
+                <div class="score-tile">
+                    <span class="score-tile-label">Score global</span>
+                    <div class="score-big" id="globalScore">--<sub> /100</sub></div>
+                    <span id="interpretation">--</span>
                 </div>
 
-                <div class="card">
-                    <h3>Physique de la voix</h3>
-                    <p>Volume : <strong id="volVal">--</strong></p>
-                    <p>Débit : <strong id="tempoVal">--</strong></p>
-                    <p>Silences : <strong id="pauseVal">--</strong></p>
+                <!-- Voix -->
+                <div class="metric-panel">
+                    <div class="metric-panel-header">
+                        <span class="metric-panel-title">Physique de la voix</span>
+                        <div class="metric-icon voice">
+                            <svg viewBox="0 0 13 13">
+                                <path d="M6.5 1v5a2 2 0 0 1-4 0V1"/>
+                                <path d="M1 6.5a5.5 5.5 0 0 0 11 0"/>
+                                <line x1="6.5" y1="12" x2="6.5" y2="13"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="metric-rows">
+                        <div class="metric-row">
+                            <span class="metric-key">Volume</span>
+                            <span class="metric-val" id="volVal">--</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-key">Débit</span>
+                            <span class="metric-val" id="tempoVal">--</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-key">Silences</span>
+                            <span class="metric-val" id="pauseVal">--</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h3>Analyse du comportement</h3>
-                    <p>Humeur : <span id="sentimentVal">--</span></p>
-                    <p>État Vocal : <strong id="emotionLabel">--</strong></p>
+                <!-- Comportement -->
+                <div class="metric-panel">
+                    <div class="metric-panel-header">
+                        <span class="metric-panel-title">Analyse du comportement</span>
+                        <div class="metric-icon behaviour">
+                            <svg viewBox="0 0 13 13">
+                                <circle cx="6.5" cy="5" r="3"/>
+                                <path d="M1 12c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="metric-rows">
+                        <div class="metric-row">
+                            <span class="metric-key">Humeur</span>
+                            <span class="metric-val" id="sentimentVal">--</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-key">État vocal</span>
+                            <span class="metric-val" id="emotionLabel">--</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h3>Tics de langage</h3>
+            </div>
+
+            <!-- Tics de langage -->
+            <div class="section-heading">
+                <h2>Tics de langage</h2>
+                <div class="section-heading-line"></div>
+            </div>
+
+            <div class="tics-row">
+                <div class="tics-panel">
+                    <div class="tics-panel-header">
+                        <span class="tics-panel-title">Mots et expressions récurrents</span>
+                        <span class="tics-hint">Fréquence détectée dans la transcription</span>
+                    </div>
                     <ul id="fillersList"></ul>
                 </div>
+            </div>
 
-                <div class="card full-width">
-                    <h3>Transcription</h3>
-                    <p id="transcriptionText" class="transcription"></p>
+            <!-- Transcription -->
+            <div class="section-heading">
+                <h2>Transcription</h2>
+                <div class="section-heading-line"></div>
+            </div>
+
+            <div class="transcript-row">
+                <div class="transcript-panel">
+                    <div class="transcript-bar">
+                        <div class="transcript-dot"></div>
+                        <span class="transcript-bar-title">Verbatim de l'enregistrement</span>
+                        <span class="transcript-tag">Automatique</span>
+                    </div>
+                    <p id="transcriptionText"></p>
                 </div>
             </div>
-        </main>
-    </div>
+
+            <!-- Rapport LLM -->
+            <div class="section-heading">
+                <h2>Rapport détaillé</h2>
+                <div class="section-heading-line"></div>
+            </div>
+
+            <div class="report-panel">
+                <div class="report-topbar">
+                    <div class="report-title-group">
+                        <span>Analyse approfondie</span>
+                        <span class="report-badge">IA</span>
+                    </div>
+                    <div class="report-actions">
+                        <button id="copyReport" class="btn-outline">Copier</button>
+                        <button id="downloadReport" class="btn-outline">Télécharger</button>
+                    </div>
+                </div>
+                <pre id="llmReport"></pre>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-left">
+            <span>PRO8605</span>
+            <div class="footer-sep"></div>
+            <span>Analyse Soft Skills &amp; Simulateur d'entretien</span>
+        </div>
+        <span class="footer-right">Projet de fin d'études &middot; Usage académique</span>
+    </footer>
+
     <script src="/static/script.js"></script>
+    <script>
+        const btn = document.getElementById('recordBtn');
+        const label = document.getElementById('btnLabel');
+        if (btn && label) {
+            const obs = new MutationObserver(() => {
+                label.textContent = btn.classList.contains('stop')
+                    ? 'Arrêter l\'enregistrement'
+                    : 'Démarrer l\'analyse';
+            });
+            obs.observe(btn, { attributes: true, attributeFilter: ['class'] });
+        }
+    </script>
 </body>
 </html>

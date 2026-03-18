@@ -1,0 +1,60 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {},
+      "targets": [
+        {
+          "expr": "audio_processing_duration_seconds",
+          "interval": "",
+          "legendFormat": "Durée traitement audio (s)",
+          "refId": "A"
+        }
+      ],
+      "title": "Durée de traitement audio",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {},
+      "targets": [
+        {
+          "expr": "nlp_sentiment_score",
+          "interval": "",
+          "legendFormat": "Score de sentiment",
+          "refId": "A"
+        }
+      ],
+      "title": "Score de sentiment NLP",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 30,
+  "title": "InterviewFlow Dashboard",
+  "version": 1
+}

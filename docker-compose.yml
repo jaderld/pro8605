@@ -15,6 +15,19 @@ services:
     volumes:
       - ./storage/mlflow:/mlflow
 
+  # --- DATABASE POSTGRESQL ---
+  postgres:
+    image: postgres:15
+    container_name: interviewflow_postgres
+    environment:
+      POSTGRES_DB: interviewflow
+      POSTGRES_USER: interviewuser
+      POSTGRES_PASSWORD: interviewpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   # --- BACKEND & UI (FastAPI sert le HTML/JS) ---
   api:
     build:
@@ -33,6 +46,7 @@ services:
       - ./scripts:/app/scripts
     depends_on:
       - mlflow
+      - postgres
 
   # --- MONITORING ---
   prometheus:
@@ -54,8 +68,10 @@ services:
     volumes:
       - ./infra/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./infra/grafana/provisioning:/etc/grafana/provisioning
+      - ./infra/grafana/dashboards_json:/etc/grafana/dashboards_json
       - grafana_data:/var/lib/grafana # Persistance des configs/users
 
 volumes:
   prometheus_data:
+  postgres_data:
   grafana_data:
