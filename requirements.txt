@@ -12,8 +12,6 @@ numpy
 pandas
 
 # API & Web
-streamlit
-streamlit-audiorecorder
 fastapi
 uvicorn
 python-multipart

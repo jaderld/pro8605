@@ -9,6 +9,8 @@ ignore =
     E722,   # bare except (acceptable dans les blocs MLflow/Prometheus non bloquants)
     E302,   # expected 2 blank lines (moins strict pour ce projet)
     W291,   # trailing whitespace
+    E221,   # multiple spaces before operator (alignement visuel intentionnel)
+    E704,   # statement on same line as def (fonctions lambda courtes)
 
 # Exclure les dossiers non pertinents
 exclude =
@@ -19,6 +21,7 @@ exclude =
     storage/,
     infra/,
     screenshots/,
+    scripts/,
     *.egg-info/,
     build/,
     dist/

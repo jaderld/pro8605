@@ -27,10 +27,11 @@ build:
 up:
 	$(DOCKER_COMPOSE) up -d
 	@echo "$(BLUE)Services lancés :$(NC)"
-	@echo "  - API : http://localhost:8000/docs"
-	@echo "  - App : http://localhost:8501"
-	@echo "  - MLflow : http://localhost:5000"
-	@echo "  - Grafana : http://localhost:3000"
+	@echo "  - API + Interface : http://localhost:8000"
+	@echo "  - Swagger / Docs  : http://localhost:8000/docs"
+	@echo "  - MLflow          : http://localhost:5000"
+	@echo "  - Prometheus      : http://localhost:9090"
+	@echo "  - Grafana         : http://localhost:3000"
 
 down:
 	$(DOCKER_COMPOSE) down

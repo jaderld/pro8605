@@ -116,4 +116,30 @@ function displayResults(data) {
     if (llmReport) {
         llmReport.textContent = data.llm_report || 'Rapport LLM non disponible.';
     }
+
+    // 7. Boutons Copier / Télécharger le rapport
+    const copyBtn = document.getElementById('copyReport');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            const text = llmReport ? llmReport.textContent : '';
+            navigator.clipboard.writeText(text).then(() => {
+                copyBtn.textContent = 'Copié ✓';
+                setTimeout(() => { copyBtn.textContent = 'Copier'; }, 2000);
+            });
+        };
+    }
+
+    const dlBtn = document.getElementById('downloadReport');
+    if (dlBtn) {
+        dlBtn.onclick = () => {
+            const text = llmReport ? llmReport.textContent : '';
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'rapport_entretien.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+    }
 }
