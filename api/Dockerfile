@@ -7,7 +7,11 @@ FROM python:3.10-slim
 # PYTHONPATH: Permet de trouver les modules dans /app/src et /app/api
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    TORCH_HOME=/app/.cache/torch \
+    HF_HOME=/app/.cache/huggingface \
+    TRANSFORMERS_CACHE=/app/.cache/huggingface \
+    XDG_CACHE_HOME=/app/.cache
 
 WORKDIR /app
 
@@ -24,22 +28,23 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# 5. Copie du code source et des assets
-# Note : On copie tout selon l'arborescence définie dans le docker-compose
+# 5. Pré-téléchargement des modèles (AVANT le COPY du code pour profiter du cache Docker)
+# Ce layer ne se ré-exécute que si requirements.txt change — pas quand le code change
+RUN mkdir -p /app/.cache/torch/hub /app/.cache/huggingface /app/.cache/whisper
+RUN python -c "from transformers import pipeline; pipeline('text-generation', model='TinyLlama/TinyLlama-1.1B-Chat-v1.0')"
+RUN python -c "import whisper; whisper.load_model('base')"
+
+# 6. Copie du code source et des assets
 COPY api/ ./api/
 COPY src/ ./src/
 COPY config/ ./config/
 COPY database/ ./database/
 COPY storage/ ./storage/
 
-# 6. Sécurité : On évite de tourner en 'root' (optionnel mais recommandé)
-RUN useradd -m interviewuser && chown -R interviewuser /app
+# 7. Sécurité : On évite de tourner en 'root'
+RUN useradd -m interviewuser \
+    && chown -R interviewuser /app
 USER interviewuser
-
-
-# 7. Pré-téléchargement des modèles HuggingFace et Whisper
-RUN python -c "from transformers import pipeline; pipeline('text-generation', model='TinyLlama/TinyLlama-1.1B-Chat-v1.0')"
-RUN python -c "import whisper; whisper.load_model('base')"
 
 EXPOSE 8000
 

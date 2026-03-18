@@ -44,8 +44,9 @@ services:
       - ./config:/app/config     # Le settings.yaml
       - ./database:/app/database # La base de données
       - ./scripts:/app/scripts
-      - hf_cache:/home/interviewuser/.cache/huggingface
-      - torch_cache:/home/interviewuser/.cache/torch
+      - hf_cache:/app/.cache/huggingface
+      - torch_cache:/app/.cache/torch
+      - whisper_cache:/app/.cache/whisper
     depends_on:
       - mlflow
       - postgres
@@ -79,3 +80,4 @@ volumes:
   grafana_data:
   hf_cache:
   torch_cache:
+  whisper_cache:
