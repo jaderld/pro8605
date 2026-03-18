@@ -6,6 +6,8 @@ from sklearn.metrics import mean_absolute_error, r2_score
 import joblib
 import mlflow
 import os
+import time
+from src.monitoring.metrics import INFERENCE_TIME
 
 class ScoringModel:
     def __init__(self, model_path="storage/models/scoring_rf.joblib"):
@@ -84,4 +86,7 @@ class ScoringModel:
             'stress_level': stress_val
         }])
 
-        return self.model.predict(input_data)[0]
+        start_time = time.time()
+        score = self.model.predict(input_data)[0]
+        INFERENCE_TIME.labels(model_name='rf_scoring').observe(time.time() - start_time)
+        return score

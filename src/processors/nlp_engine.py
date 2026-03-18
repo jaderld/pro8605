@@ -12,8 +12,8 @@ class NLPEngine:
         self.logger = logging.getLogger(__name__)
         self.config = self._load_config(config_path)
         
-        # Liste des fillers
-        raw_fillers = self.config.get('nlp', {}).get('fillers', ["euh", "bah", "ben", "genre", "voilà", "en fait", "du coup", "enfin"])
+        # Liste des fillers (clé de premier niveau dans settings.yaml)
+        raw_fillers = self.config.get('fillers', ["euh", "bah", "ben", "genre", "voilà", "en fait", "du coup", "enfin"])
         self.fillers_regex = [r"\b" + f + r"\b" for f in raw_fillers]
 
     def _load_config(self, path):

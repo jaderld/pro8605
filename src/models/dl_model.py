@@ -10,7 +10,7 @@ import librosa
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score
-from src.monitoring.metrics import TRANSCRIPTION_TIME, AUDIO_STRESS_LEVEL
+from src.monitoring.metrics import TRANSCRIPTION_TIME, AUDIO_STRESS_LEVEL, INFERENCE_TIME, MODEL_CONFIDENCE
 
 # --- FONCTION PRECLEAN ---
 def preclean(text: str) -> str:
@@ -86,6 +86,7 @@ class InterviewModel:
 
     def predict_emotion(self, features):
         """Inférence PyTorch pour la classification d'émotion."""
+        start_time = time.time()
         self.classifier.eval()
         input_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0).to(self.device)
         
@@ -95,6 +96,10 @@ class InterviewModel:
             predicted_class = torch.argmax(probabilities, dim=1).item()
             confidence = probabilities[0][predicted_class].item()
         
+        elapsed = time.time() - start_time
+        INFERENCE_TIME.labels(model_name='pytorch_emotion').observe(elapsed)
+        MODEL_CONFIDENCE.observe(confidence)
+
         classes = {0: "Calme", 1: "Stressé"}
         result_label = classes.get(predicted_class, "Inconnu")
         
@@ -109,39 +114,48 @@ class InterviewModel:
         return {"emotion": result_label, "confidence": round(confidence, 4)}
 
     def train_custom_model(self, df, epochs=50, batch_size=16):
-        """Entraînement MLOps avec calcul d'Accuracy et F1-Score."""
+        """Entraînement MLOps avec calcul d'Accuracy et F1-Score sur jeu de test."""
+        from sklearn.model_selection import train_test_split as sk_split
         print("🚀 Début de l'entraînement du modèle d'émotion (Architecture Binaire)...")
-        self.classifier.train() 
-        
+        self.classifier.train()
+
         X, y = [], []
-        
-        # 1. Préparation des données (Lecture directe du vecteur complet depuis le CSV)
+
+        # 1. Préparation des données
         for _, row in df.iterrows():
             X.append([
-                row['volume'], 
-                row['zcr'], 
-                row['spectral_centroid'], 
-                row['tempo'] / 200.0, 
+                row['volume'],
+                row['zcr'],
+                row['spectral_centroid'],
+                row['tempo'] / 200.0,
                 row['pause_ratio']
             ])
             y.append(int(row['label']))
-            
-        X_tensor = torch.tensor(X, dtype=torch.float32).to(self.device)
-        y_tensor = torch.tensor(y, dtype=torch.long).to(self.device)
-        
-        dataset = torch.utils.data.TensorDataset(X_tensor, y_tensor)
+
+        # 2. Split train / test (80/20) — métriques calculées sur données jamais vues
+        X_train, X_test, y_train, y_test = sk_split(
+            X, y, test_size=0.2, random_state=42, stratify=y
+        )
+
+        X_train_t = torch.tensor(X_train, dtype=torch.float32).to(self.device)
+        y_train_t = torch.tensor(y_train, dtype=torch.long).to(self.device)
+        X_test_t  = torch.tensor(X_test,  dtype=torch.float32).to(self.device)
+        y_test_t  = torch.tensor(y_test,  dtype=torch.long).to(self.device)
+
+        dataset = torch.utils.data.TensorDataset(X_train_t, y_train_t)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
-        
+
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(self.classifier.parameters(), lr=0.001)
-        
+
         mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
-        mlflow.set_experiment("Emotion_Audio_DL")
-        
+        mlflow.set_experiment("Audionet_DL")
+
         with mlflow.start_run():
-            # Boucle d'entraînement
+            # Boucle d'entraînement sur le jeu d'entraînement uniquement
             for epoch in range(epochs):
                 total_loss = 0
+                self.classifier.train()
                 for batch_x, batch_y in dataloader:
                     optimizer.zero_grad()
                     outputs = self.classifier(batch_x)
@@ -149,15 +163,15 @@ class InterviewModel:
                     loss.backward()
                     optimizer.step()
                     total_loss += loss.item()
-            
-            # Phase d'évaluation pour MLflow
+
+            # Évaluation sur le jeu de TEST (données jamais vues)
             self.classifier.eval()
             with torch.no_grad():
-                outputs = self.classifier(X_tensor)
+                outputs = self.classifier(X_test_t)
                 _, predicted = torch.max(outputs.data, 1)
-                all_preds = predicted.cpu().numpy()
-                all_labels = y_tensor.cpu().numpy()
-                
+                all_preds  = predicted.cpu().numpy()
+                all_labels = y_test_t.cpu().numpy()
+
             accuracy = accuracy_score(all_labels, all_preds)
             f1 = f1_score(all_labels, all_preds, average='weighted')
             

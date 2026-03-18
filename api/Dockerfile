@@ -36,6 +36,11 @@ COPY storage/ ./storage/
 RUN useradd -m interviewuser && chown -R interviewuser /app
 USER interviewuser
 
+
+# 7. Pré-téléchargement des modèles HuggingFace et Whisper
+RUN python -c "from transformers import pipeline; pipeline('text-generation', model='TinyLlama/TinyLlama-1.1B-Chat-v1.0')"
+RUN python -c "import whisper; whisper.load_model('base')"
+
 EXPOSE 8000
 
 # 7. Lancement avec Uvicorn

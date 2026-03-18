@@ -1,15 +1,8 @@
 # dashboard.yml
-# Provisionnement automatique d'un dashboard exemple
+# Provisionnement automatique des dashboards Grafana
 apiVersion: 1
-datasources:
-  - name: Prometheus
-    type: prometheus
-    access: proxy
-    url: http://prometheus:9090
-    isDefault: true
-    editable: true
 providers:
-  - name: 'InterviewFlow Dashboard'
+  - name: 'PRO8605 Dashboard'
     orgId: 1
     folder: ''
     type: file

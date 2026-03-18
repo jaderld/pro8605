@@ -29,10 +29,11 @@ class DBManager:
     def _init_db(self):
         conn = self._get_conn()
         cursor = conn.cursor()
-        # SQL compatible pour SQLite et PostgreSQL
-        create_table_sql = '''
+        # Syntaxe PRIMARY KEY adaptée selon le backend
+        pk_col = "id SERIAL PRIMARY KEY" if self.use_postgres else "id INTEGER PRIMARY KEY AUTOINCREMENT"
+        create_table_sql = f'''
             CREATE TABLE IF NOT EXISTS sessions (
-                id SERIAL PRIMARY KEY,
+                {pk_col},
                 timestamp TEXT NOT NULL,
                 duration REAL,
                 sentiment_score REAL,

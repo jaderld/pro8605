@@ -25,3 +25,8 @@ pyyaml
 matplotlib
 ffmpeg-python
 transformers
+
+# ML / Data
+scikit-learn
+joblib
+psycopg2-binary

@@ -10,7 +10,7 @@ NC = \033[0m
 .PHONY: help build up down restart logs ps test-nlp clean
 
 help:
-	@echo "$(BLUE)InterviewFlow AI - Commandes disponibles :$(NC)"
+	@echo "$(BLUE)PRO8605 - Commandes disponibles :$(NC)"
 	@echo "$(GREEN)  make build$(NC)        : Construit les images Docker"
 	@echo "$(GREEN)  make up$(NC)           : Lance tous les services (API, Front, MLflow, etc.)"
 	@echo "$(GREEN)  make down$(NC)         : Arrête tous les services"

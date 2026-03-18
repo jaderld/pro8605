@@ -1,0 +1,24 @@
+[flake8]
+# Longueur max : 120 au lieu de 79 (code scientifique/ML souvent verbeux)
+max-line-length = 120
+
+# Ignorer certaines règles non critiques
+ignore =
+    E501,   # line too long (géré via max-line-length)
+    W503,   # line break before binary operator (style valide)
+    E722,   # bare except (acceptable dans les blocs MLflow/Prometheus non bloquants)
+    E302,   # expected 2 blank lines (moins strict pour ce projet)
+    W291,   # trailing whitespace
+
+# Exclure les dossiers non pertinents
+exclude =
+    venv/,
+    .venv/,
+    __pycache__/,
+    .git/,
+    storage/,
+    infra/,
+    screenshots/,
+    *.egg-info/,
+    build/,
+    dist/

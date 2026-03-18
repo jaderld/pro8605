@@ -2,6 +2,6 @@ global:
   scrape_interval: 10s
 
 scrape_configs:
-  - job_name: 'interviewflow-api'
+  - job_name: 'pro8605-api'
     static_configs:
       - targets: ['api:8000']

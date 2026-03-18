@@ -15,30 +15,24 @@
   "panels": [
     {
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "id": 1,
       "options": {},
       "targets": [
         {
-          "expr": "audio_processing_duration_seconds",
+          "expr": "rate(api_processing_time_seconds_sum[1m]) / rate(api_processing_time_seconds_count[1m])",
           "interval": "",
-          "legendFormat": "Durée traitement audio (s)",
+          "legendFormat": "Durée moy. {{module}} (s)",
           "refId": "A"
         }
       ],
-      "title": "Durée de traitement audio",
+      "title": "Durée de traitement par module",
       "type": "timeseries"
     },
     {
       "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "id": 2,
       "options": {},
@@ -52,9 +46,77 @@
       ],
       "title": "Score de sentiment NLP",
       "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {},
+      "targets": [
+        {
+          "expr": "interview_final_score",
+          "interval": "",
+          "legendFormat": "Score final (/100)",
+          "refId": "A"
+        }
+      ],
+      "title": "Score final d'entretien",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "options": {},
+      "targets": [
+        {
+          "expr": "rate(nlp_filler_words_total[1m])",
+          "interval": "",
+          "legendFormat": "Tics de langage / min",
+          "refId": "A"
+        }
+      ],
+      "title": "Tics de langage (taux)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "min": 0, "max": 1 }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "options": {},
+      "targets": [
+        {
+          "expr": "audio_stress_level",
+          "interval": "",
+          "legendFormat": "Niveau de stress audio",
+          "refId": "A"
+        }
+      ],
+      "title": "Stress détecté (0=Calme, 1=Stressé)",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "options": {},
+      "targets": [
+        {
+          "expr": "rate(model_inference_time_seconds_sum[1m]) / rate(model_inference_time_seconds_count[1m])",
+          "interval": "",
+          "legendFormat": "Inférence {{model_name}} (s)",
+          "refId": "A"
+        }
+      ],
+      "title": "Temps d'inférence par modèle",
+      "type": "timeseries"
     }
   ],
   "schemaVersion": 30,
-  "title": "InterviewFlow Dashboard",
-  "version": 1
+  "title": "PRO8605 Dashboard",
+  "version": 2
 }

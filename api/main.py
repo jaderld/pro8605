@@ -2,44 +2,86 @@ import os
 import shutil
 import tempfile
 import logging
-import pandas as pd
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from prometheus_client import make_asgi_app
-from transformers import pipeline
+from transformers import pipeline as hf_pipeline
 
 # --- Imports internes ---
 from src.processors.audio_engine import AudioEngine
 from src.processors.nlp_engine import NLPEngine
 from src.models.dl_model import InterviewModel
 from src.models.ml_model import ScoringModel
+from src.data_pipeline import DataPipeline
+from src.evaluation.metrics import compute_soft_skills
+from src.monitoring.metrics import FINAL_SCORE_GAUGE, API_REQUESTS
+from database.db_manager import DBManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="InterviewFlow AI API")
+app = FastAPI(title="PRO8605 — Soft Skills Analysis API")
 
 audio_engine = AudioEngine()
 nlp_engine = NLPEngine()
-dl_model = InterviewModel() 
+dl_model = InterviewModel()
 ml_model = ScoringModel()
+db_manager = DBManager()
+
+# --- LLM chargé une seule fois au démarrage ---
+hf_token = os.getenv("HF_TOKEN")
+try:
+    llm_generator = hf_pipeline(
+        "text-generation",
+        model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        max_new_tokens=512,
+        do_sample=True,
+        temperature=0.7,
+        token=hf_token if hf_token else None
+    )
+    logger.info("✅ TinyLlama chargé en mémoire.")
+except Exception as _llm_err:
+    llm_generator = None
+    logger.warning(f"⚠️ TinyLlama non disponible au démarrage : {_llm_err}")
 
 app.mount("/metrics", make_asgi_app())
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
 
+
 @app.get("/")
 async def serve_frontend():
-    return FileResponse('api/static/index.html')
+    return FileResponse("api/static/index.html")
+
 
 # ==========================================
-# ROUTES D'ENTRAÎNEMENT MLOPS
+# 🔧 ROUTES D'ENTRAÎNEMENT MLOPS
 # ==========================================
 
-# ==========================================
-# ROUTE LLM
-# ==========================================
-from fastapi import Body
+@app.post("/train/dl", tags=["Training"])
+async def train_dl_model():
+    """Entraîne SimpleAudioNet (PyTorch) sur fake_sessions.csv."""
+    try:
+        pipeline_data = DataPipeline("storage/fake_sessions.csv")
+        df = pipeline_data.extract()
+        result = dl_model.train_custom_model(df, epochs=50, batch_size=16)
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Erreur entraînement DL : {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.post("/train/ml", tags=["Training"])
+async def train_ml_model():
+    """Entraîne le Random Forest Regressor sur fake_sessions.csv."""
+    try:
+        pipeline_data = DataPipeline("storage/fake_sessions.csv")
+        df = pipeline_data.extract()
+        result = ml_model.train(df)
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Erreur entraînement ML : {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # ==========================================
@@ -55,121 +97,130 @@ async def analyze_file(file: UploadFile = File(...)):
             shutil.copyfileobj(file.file, tmp)
             temp_path = tmp.name
 
-        # 1. Extraction des caractéristiques
+        # 1. Extraction des caractéristiques audio
         audio_results = audio_engine.process_signal(temp_path)
-        features = audio_results.get('features', {})
-        
-        # 2. Transcription et Émotion
-        transcription = dl_model.transcribe_audio(temp_path)
-        emotion_data = dl_model.predict_emotion(audio_results['dl_input_vector'])
+        features = audio_results.get("features", {})
 
-        # 3. NLP
+        # 2. Transcription (Whisper) + Émotion (SimpleAudioNet)
+        transcription = dl_model.transcribe_audio(temp_path)
+        emotion_data = dl_model.predict_emotion(audio_results["dl_input_vector"])
+
+        # 3. Analyse NLP
         nlp_results = nlp_engine.analyze_text(transcription)
 
-        # 4. CALCUL DU SCORE AVEC PÉNALITÉS
+        # 4. Score global (Random Forest) + pénalités
         base_score = ml_model.predict_score(features, nlp_results, emotion_data)
-        nb_fillers = nlp_results.get('filler_count', 0)
+        nb_fillers = nlp_results.get("filler_count", 0)
         penalty = nb_fillers * 10
-        sentiment_penalty = 15 if nlp_results.get('sentiment_score', 0) < -0.1 else 0
+        sentiment_penalty = 15 if nlp_results.get("sentiment_score", 0) < -0.1 else 0
         final_score = max(0, min(100, float(base_score) - penalty - sentiment_penalty))
 
-        # --- GESTION DU BPM ---
-        tempo_val = features.get('tempo', 0)
-        if tempo_val < 90: label_tempo = "Lent"
-        elif tempo_val < 130: label_tempo = "Modéré"
-        else: label_tempo = "Rapide"
+        # Labels lisibles
+        tempo_val = features.get("tempo", 0)
+        if tempo_val < 90:
+            label_tempo = "Lent"
+        elif tempo_val < 130:
+            label_tempo = "Modéré"
+        else:
+            label_tempo = "Rapide"
 
-        # --- GESTION DU VOLUME ---
-        vol_raw = features.get('volume', 0)
-        vol_percent = round(vol_raw * 1000, 1)
-        vol_display = f"{vol_percent}%"
+        vol_raw = features.get("volume", 0)
+        vol_display = f"{round(vol_raw * 1000, 1)}%"
 
+        sentiment_score = nlp_results.get("sentiment_score", 0)
+        if sentiment_score > 0.1:
+            sentiment_label = "Positif 😊"
+        elif sentiment_score < -0.1:
+            sentiment_label = "Négatif 😟"
+        else:
+            sentiment_label = "Neutre 😐"
 
-        # 5. RÉSULTAT FINAL (sans rapport LLM)
+        # 5. Résultat structuré
+        soft_skills = compute_soft_skills(features, nlp_results)
+        FINAL_SCORE_GAUGE.set(final_score)
+
         full_analysis = {
             "final_score": round(final_score, 2),
-            "interpretation": "Excellent" if final_score > 75 else ("Moyen" if final_score > 45 else "À améliorer"),
+            "interpretation": (
+                "Excellent" if final_score > 75
+                else ("Moyen" if final_score > 45 else "À améliorer")
+            ),
             "details": {
                 "text_analysis": {
                     "transcription": transcription,
-                    "sentiment": "Positif 😊" if nlp_results.get('sentiment_score', 0) > 0.1 else ("Négatif 😟" if nlp_results.get('sentiment_score', 0) < -0.1 else "Neutre 😐"),
-                    "fillers": nlp_results.get('fillers_details', {})
+                    "sentiment": sentiment_label,
+                    "fillers": nlp_results.get("fillers_details", {}),
                 },
                 "audio_analysis": {
-                    "volume": vol_display,  
-                    "tempo_bpm": f"{round(tempo_val, 1)} ({label_tempo})", 
-                    "pause_ratio": f"{round(features.get('pause_ratio', 0) * 100, 1)}%"
+                    "volume": vol_display,
+                    "tempo_bpm": f"{round(tempo_val, 1)} ({label_tempo})",
+                    "pause_ratio": f"{round(features.get('pause_ratio', 0) * 100, 1)}%",
                 },
                 "emotion_analysis": {
-                    "label": emotion_data.get('emotion', 'Neutre'),
-                }
-            }
+                    "label": emotion_data.get("emotion", "Neutre"),
+                },
+                "soft_skills": {
+                    "stress": round(soft_skills["stress"], 3),
+                    "confidence": round(soft_skills["confidence"], 3),
+                    "dynamism": round(soft_skills["dynamism"], 3),
+                },
+            },
         }
 
-        # 6. Génération automatique du rapport LLM
-
+        # 6. Rapport LLM (TinyLlama — chargé au démarrage)
         try:
-            from transformers import pipeline
-            score = full_analysis.get('final_score', '--')
-            sentiment = full_analysis.get('details', {}).get('text_analysis', {}).get('sentiment', '--')
-            stress = full_analysis.get('details', {}).get('emotion_analysis', {}).get('label', '--')
-            volume = full_analysis.get('details', {}).get('audio_analysis', {}).get('volume', '--')
-            tempo = full_analysis.get('details', {}).get('audio_analysis', {}).get('tempo_bpm', '--')
-            pause_ratio = full_analysis.get('details', {}).get('audio_analysis', {}).get('pause_ratio', '--')
-            fillers = full_analysis.get('details', {}).get('text_analysis', {}).get('fillers', {})
-            filler_count = sum(fillers.values()) if isinstance(fillers, dict) else fillers or 0
-            transcription = full_analysis.get('details', {}).get('text_analysis', {}).get('transcription', '--')
+            if llm_generator is None:
+                raise RuntimeError("LLM non chargé au démarrage")
 
-            prompt = f"""
-Tu es un assistant RH expert en analyse d’entretiens.
-À partir des données suivantes issues d’un entretien simulé (scores, métriques, transcription), génère un rapport détaillé et professionnel comprenant :
+            score = full_analysis["final_score"]
+            fillers = full_analysis["details"]["text_analysis"]["fillers"]
+            filler_count = sum(fillers.values()) if isinstance(fillers, dict) else 0
 
-1. Résumé global
-2. Analyse des scores (avec explications)
-3. Analyse de la transcription
-4. Feedback personnalisé (points forts, axes d’amélioration, points problématiques)
-5. Conseils pratiques
-
-Données d’entrée :
-- Score final : {score}
-- Sentiment : {sentiment}
-- Stress détecté : {stress}
-- Volume : {volume}
-- Tempo : {tempo}
-- Ratio de pauses : {pause_ratio}
-- Nombre de tics de langage : {filler_count}
-- Transcription : {transcription}
-
-Sois factuel, bienveillant, pédagogique et justifie chaque remarque.
-"""
-            # Utilisation d'un modèle instruction-following (TinyLlama ou Zephyr)
-            # Pour TinyLlama : "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-            # Pour Zephyr : "HuggingFaceH4/zephyr-7b-beta"
-            # On prend TinyLlama pour la légèreté (modèle 1.1B, fonctionne sur CPU)
-            hf_token = os.getenv("HF_TOKEN")
-            generator = pipeline(
-                "text-generation",
-                model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-                # tokenizer n'est pas obligatoire si auto-détecté, sinon :
-                # tokenizer="TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-                max_new_tokens=512,
-                do_sample=True,
-                temperature=0.7,
-                use_auth_token=hf_token if hf_token else None
+            prompt_instruction = (
+                "<|system|>Tu es un assistant RH expert en analyse d'entretiens.<|end|>\n"
+                "<|user|>Génère un rapport détaillé comprenant :\n"
+                "1. Résumé global\n"
+                "2. Analyse des scores\n"
+                "3. Analyse de la transcription\n"
+                "4. Feedback personnalisé (points forts / axes d'amélioration)\n"
+                "5. Conseils pratiques\n\n"
+                f"Score final : {score}\n"
+                f"Sentiment : {sentiment_label}\n"
+                f"Émotion : {emotion_data.get('emotion', 'Neutre')}\n"
+                f"Volume : {vol_display}\n"
+                f"Tempo : {round(tempo_val, 1)} BPM ({label_tempo})\n"
+                f"Ratio de pauses : {round(features.get('pause_ratio', 0) * 100, 1)}%\n"
+                f"Tics de langage détectés : {filler_count}\n"
+                f"Transcription : {transcription}\n"
+                "Sois factuel, bienveillant et pédagogique.<|end|>\n<|assistant|>"
             )
-            # Format prompt type chat/instruction
-            prompt_instruction = f"""<|system|>Tu es un assistant RH expert en analyse d’entretiens.<|end|>\n<|user|>À partir des données suivantes issues d’un entretien simulé (scores, métriques, transcription), génère un rapport détaillé et professionnel comprenant :\n1. Résumé global\n2. Analyse des scores (avec explications)\n3. Analyse de la transcription\n4. Feedback personnalisé (points forts, axes d’amélioration, points problématiques)\n5. Conseils pratiques\n\nDonnées d’entrée :\n- Score final : {score}\n- Sentiment : {sentiment}\n- Stress détecté : {stress}\n- Volume : {volume}\n- Tempo : {tempo}\n- Ratio de pauses : {pause_ratio}\n- Nombre de tics de langage : {filler_count}\n- Transcription : {transcription}\n\nSois factuel, bienveillant, pédagogique et justifie chaque remarque.<|end|>\n<|assistant|>"""
-            outputs = generator(prompt_instruction)
+            outputs = llm_generator(prompt_instruction)
             rapport = outputs[0]["generated_text"].split("<|assistant|>")[-1].strip()
             full_analysis["llm_report"] = rapport
         except Exception as e:
-            logger.error(f"Erreur génération rapport LLM : {str(e)}")
-            full_analysis["llm_report"] = "Erreur lors de la génération du rapport LLM."
+            logger.error(f"Erreur génération rapport LLM : {e}")
+            full_analysis["llm_report"] = "Rapport LLM non disponible."
 
+        # 7. Persistance en base de données
+        try:
+            db_manager.save_session({
+                "duration": audio_results.get("meta", {}).get("duration"),
+                "sentiment_score": nlp_results.get("sentiment_score"),
+                "pause_ratio": features.get("pause_ratio"),
+                "transcription": transcription,
+                "final_score": final_score,
+                "emotion": emotion_data.get("emotion"),
+                "filler_count": nlp_results.get("filler_count"),
+            })
+        except Exception as e:
+            logger.warning(f"Sauvegarde DB échouée (non bloquant) : {e}")
+
+        API_REQUESTS.labels(endpoint="/analyze_file/", status="success").inc()
         return JSONResponse(content=full_analysis)
 
     except Exception as e:
-        logger.error(f"Erreur : {str(e)}")
+        logger.error(f"Erreur analyse : {e}")
+        API_REQUESTS.labels(endpoint="/analyze_file/", status="error").inc()
         return JSONResponse(status_code=500, content={"error": str(e)})
     finally:
         if temp_path and os.path.exists(temp_path):

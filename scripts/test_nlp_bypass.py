@@ -56,7 +56,11 @@ def run_test():
         details = result.get('fillers_details', {})
         
         # Le ML donne la note
-        score = ml_model.predict_score(audio_features=mock_audio_features, nlp_results=result)
+        score = ml_model.predict_score(
+            audio_features=mock_audio_features,
+            nlp_results=result,
+            emotion_data={'emotion': 'Calme'}
+        )
         
         # Affichage (Ton design)
         display_text = (text[:42] + '...') if len(text) > 42 else text

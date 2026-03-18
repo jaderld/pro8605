@@ -81,13 +81,19 @@ function displayResults(data) {
     // 3. Audio (Physique)
     const audioData = data.details?.audio_analysis || {};
     update('volVal', audioData.volume || "--");
-    update('tempoVal', (audioData.tempo_bpm || 0) + " BPM");
+    update('tempoVal', audioData.tempo_bpm || "--");
     update('pauseVal', audioData.pause_ratio || "--");
 
     // 4. Émotion (IA)
     const emoData = data.details?.emotion_analysis || {};
     update('emotionLabel', emoData.label || "Inconnu");
     update('confidenceVal', emoData.confidence || "0%");
+
+    // 4b. Soft Skills
+    const softData = data.details?.soft_skills || {};
+    update('softStress', softData.stress != null ? Math.round(softData.stress * 100) + ' %' : '--');
+    update('softConfidence', softData.confidence != null ? Math.round(softData.confidence * 100) + ' %' : '--');
+    update('softDynamism', softData.dynamism != null ? Math.round(softData.dynamism * 100) + ' %' : '--');
 
     // 5. Tics de Langage (Liste dynamique)
     const list = document.getElementById('fillersList');

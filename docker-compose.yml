@@ -4,7 +4,7 @@ services:
   # --- ML ENGINE & TRACKING ---
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.7.1
-    container_name: interviewflow_mlflow
+    container_name: pro8605_mlflow
     ports:
       - "${MLFLOW_PORT:-5000}:5000"
     command: >
@@ -18,9 +18,9 @@ services:
   # --- DATABASE POSTGRESQL ---
   postgres:
     image: postgres:15
-    container_name: interviewflow_postgres
+    container_name: pro8605_postgres
     environment:
-      POSTGRES_DB: interviewflow
+      POSTGRES_DB: pro8605
       POSTGRES_USER: interviewuser
       POSTGRES_PASSWORD: interviewpass
     ports:
@@ -33,7 +33,7 @@ services:
     build:
       context: .  # On remonte au root pour accéder à tout
       dockerfile: api/Dockerfile
-    container_name: interviewflow_api
+    container_name: pro8605_api
     env_file: .env
     ports:
       - "${API_PORT:-8000}:8000"
@@ -44,6 +44,8 @@ services:
       - ./config:/app/config     # Le settings.yaml
       - ./database:/app/database # La base de données
       - ./scripts:/app/scripts
+      - hf_cache:/home/interviewuser/.cache/huggingface
+      - torch_cache:/home/interviewuser/.cache/torch
     depends_on:
       - mlflow
       - postgres
@@ -51,7 +53,7 @@ services:
   # --- MONITORING ---
   prometheus:
     image: prom/prometheus:latest
-    container_name: interviewflow_prometheus
+    container_name: pro8605_prometheus
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
@@ -60,7 +62,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: interviewflow_grafana
+    container_name: pro8605_grafana
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     depends_on:
@@ -75,3 +77,5 @@ volumes:
   prometheus_data:
   postgres_data:
   grafana_data:
+  hf_cache:
+  torch_cache:

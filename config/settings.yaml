@@ -1,5 +1,5 @@
 audio:
-  sample_rate: 22050
+  sample_rate: 16000
   silence_threshold_db: 20
 thresholds:
   volume_min: 0.02
@@ -19,4 +19,4 @@ postgres:
   port: 5432
   user: interviewuser
   password: interviewpass
-  dbname: interviewflow
+  dbname: pro8605
