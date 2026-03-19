@@ -11,7 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     TORCH_HOME=/app/.cache/torch \
     HF_HOME=/app/.cache/huggingface \
     TRANSFORMERS_CACHE=/app/.cache/huggingface \
-    XDG_CACHE_HOME=/app/.cache
+    XDG_CACHE_HOME=/app/.cache \
+    GIT_PYTHON_REFRESH=quiet
 
 WORKDIR /app
 

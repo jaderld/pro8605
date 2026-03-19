@@ -35,9 +35,6 @@ try:
     llm_generator = hf_pipeline(
         "text-generation",
         model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        max_new_tokens=512,
-        do_sample=True,
-        temperature=0.7,
         token=hf_token if hf_token else None
     )
     logger.info("✅ TinyLlama chargé en mémoire.")
@@ -52,6 +49,12 @@ app.mount("/static", StaticFiles(directory="api/static"), name="static")
 @app.get("/")
 async def serve_frontend():
     return FileResponse("api/static/index.html")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    from fastapi.responses import Response
+    return Response(status_code=204)
 
 
 # ==========================================
@@ -91,18 +94,30 @@ async def train_ml_model():
 @app.post("/analyze_file/", tags=["Analysis"])
 async def analyze_file(file: UploadFile = File(...)):
     temp_path = None
+    wav_path = None
     try:
         suffix = os.path.splitext(file.filename)[1]
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             shutil.copyfileobj(file.file, tmp)
             temp_path = tmp.name
 
+        # Conversion en PCM WAV via ffmpeg (corrige PySoundFile/audioread avec WebM)
+        wav_fd, wav_path = tempfile.mkstemp(suffix=".wav")
+        os.close(wav_fd)
+        import subprocess
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", temp_path, "-ar", "16000", "-ac", "1", "-f", "wav", wav_path],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
         # 1. Extraction des caractéristiques audio
-        audio_results = audio_engine.process_signal(temp_path)
+        audio_results = audio_engine.process_signal(wav_path)
         features = audio_results.get("features", {})
 
         # 2. Transcription (Whisper) + Émotion (SimpleAudioNet)
-        transcription = dl_model.transcribe_audio(temp_path)
+        transcription = dl_model.transcribe_audio(wav_path)
         emotion_data = dl_model.predict_emotion(audio_results["dl_input_vector"])
 
         # 3. Analyse NLP
@@ -158,6 +173,7 @@ async def analyze_file(file: UploadFile = File(...)):
                 },
                 "emotion_analysis": {
                     "label": emotion_data.get("emotion", "Neutre"),
+                    "confidence": f"{round(emotion_data.get('confidence', 0) * 100, 1)}%",
                 },
                 "soft_skills": {
                     "stress": round(soft_skills["stress"], 3),
@@ -194,7 +210,13 @@ async def analyze_file(file: UploadFile = File(...)):
                 f"Transcription : {transcription}\n"
                 "Sois factuel, bienveillant et pédagogique.<|end|>\n<|assistant|>"
             )
-            outputs = llm_generator(prompt_instruction)
+            outputs = llm_generator(
+                prompt_instruction,
+                max_new_tokens=512,
+                do_sample=True,
+                temperature=0.7,
+                pad_token_id=2,
+            )
             rapport = outputs[0]["generated_text"].split("<|assistant|>")[-1].strip()
             full_analysis["llm_report"] = rapport
         except Exception as e:
@@ -225,3 +247,5 @@ async def analyze_file(file: UploadFile = File(...)):
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
+        if wav_path and os.path.exists(wav_path):
+            os.remove(wav_path)

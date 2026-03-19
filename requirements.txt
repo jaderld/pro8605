@@ -6,6 +6,7 @@ torch
 torchaudio
 openai-whisper
 librosa
+soundfile
 textblob
 scipy
 numpy
