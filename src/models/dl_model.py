@@ -115,11 +115,6 @@ class InterviewModel:
         classes = {0: "Calme", 1: "Stressé"}
         result_label = classes.get(predicted_class, "Inconnu")
         
-        # Monitoring Prometheus
-        try:
-            pass  # mlflow.log_metric hors run supprimé (pas de run actif à l'inférence)
-        except: pass
-            
         stress_val = 1.0 if result_label == "Stressé" else 0.0
         AUDIO_STRESS_LEVEL.set(stress_val)
         

@@ -7,23 +7,31 @@
 ## Table des matières
 
 1. [Vue d'ensemble](#1-vue-densemble)
-2. [Architecture](#2-architecture)
-3. [Pipeline d'analyse temps réel](#3-pipeline-danalyse-temps-réel)
-4. [Modèles — Fonctionnement & Entraînement](#4-modèles--fonctionnement--entraînement)
-   - 4.1 [AudioEngine — Extraction de features](#41-audioengine--extraction-de-features)
-   - 4.2 [Modèle DL — SimpleAudioNet (PyTorch)](#42-modèle-dl--simpleaudionet-pytorch)
-   - 4.3 [Transcription — Whisper (OpenAI)](#43-transcription--whisper-openai)
-   - 4.4 [NLPEngine — DistilCamemBERT](#44-nlpengine--distilcamembert)
-   - 4.5 [Modèle ML — Random Forest Regressor](#45-modèle-ml--random-forest-regressor)
-   - 4.6 [Rapport structuré — Générateur basé sur règles](#46-rapport-structuré--générateur-basé-sur-règles)
-   - 4.7 [Endpoints d'entraînement à la demande](#47-endpoints-dentraînement-à-la-demande)
-5. [Métriques évaluées](#5-métriques-évaluées)
-6. [MLOps — Tracking & Monitoring](#6-mlops--tracking--monitoring)
-7. [Données d'entraînement](#7-données-dentraînement)
-8. [Installation & Lancement](#8-installation--lancement)
-9. [Tests unitaires](#9-tests-unitaires)
-10. [Structure du projet](#10-structure-du-projet)
-11. [Limites & Roadmap](#11-limites--roadmap)
+2. [Guide fonctionnel — Ce que fait le projet](#2-guide-fonctionnel--ce-que-fait-le-projet)
+   - 2.1 [Parcours utilisateur](#21-parcours-utilisateur)
+   - 2.2 [Le simulateur d'entretien](#22-le-simulateur-dentretien)
+   - 2.3 [Ce qui est analysé dans votre prise de parole](#23-ce-qui-est-analysé-dans-votre-prise-de-parole)
+   - 2.4 [Le score global : comment il est calculé](#24-le-score-global--comment-il-est-calculé)
+   - 2.5 [Le rapport d'analyse détaillé](#25-le-rapport-danalyse-détaillé)
+   - 2.6 [Analyse de pertinence par intelligence artificielle](#26-analyse-de-pertinence-par-intelligence-artificielle)
+   - 2.7 [Exemples de résultats concrets](#27-exemples-de-résultats-concrets)
+3. [Architecture](#3-architecture)
+4. [Pipeline d'analyse temps réel](#4-pipeline-danalyse-temps-réel)
+5. [Modèles — Fonctionnement & Entraînement](#5-modèles--fonctionnement--entraînement)
+   - 5.1 [AudioEngine — Extraction de features](#51-audioengine--extraction-de-features)
+   - 5.2 [Modèle DL — SimpleAudioNet (PyTorch)](#52-modèle-dl--simpleaudionet-pytorch)
+   - 5.3 [Transcription — Whisper (OpenAI)](#53-transcription--whisper-openai)
+   - 5.4 [NLPEngine — DistilCamemBERT](#54-nlpengine--distilcamembert)
+   - 5.5 [Modèle ML — Random Forest Regressor](#55-modèle-ml--random-forest-regressor)
+   - 5.6 [Rapport structuré — Générateur basé sur règles](#56-rapport-structuré--générateur-basé-sur-règles)
+   - 5.7 [Endpoints d'entraînement à la demande](#57-endpoints-dentraînement-à-la-demande)
+6. [Métriques évaluées](#6-métriques-évaluées)
+7. [MLOps — Tracking & Monitoring](#7-mlops--tracking--monitoring)
+8. [Données d'entraînement](#8-données-dentraînement)
+9. [Installation & Lancement](#9-installation--lancement)
+10. [Tests unitaires](#10-tests-unitaires)
+11. [Structure du projet](#11-structure-du-projet)
+12. [Limites & Roadmap](#12-limites--roadmap)
 
 ---
 
@@ -41,7 +49,134 @@ PRO8605 est une plateforme web full-stack permettant à un candidat (ou formateu
 
 ---
 
-## 2. Architecture
+## 2. Guide fonctionnel — Ce que fait le projet
+
+PRO8605 est un **simulateur d'entretien professionnel** conçu pour aider les candidats à améliorer leur prise de parole avant un vrai entretien d'embauche. L'idée est simple : vous parlez dans votre micro comme si vous répondiez à une question d'entretien, et l'application vous donne un retour complet sur votre performance — exactement comme un coach RH le ferait, mais de manière instantanée et accessible depuis un navigateur web.
+
+Le projet s'adresse aussi bien aux **candidats** qui veulent s'entraîner seuls qu'aux **formateurs et cabinets RH** qui souhaitent proposer un outil d'évaluation objectif et reproductible à grande échelle.
+
+### 2.1 Parcours utilisateur
+
+Voici ce qui se passe concrètement quand vous utilisez l'application :
+
+1. **Vous ouvrez l'interface web** dans votre navigateur (actuellement en local ; http://localhost:8000). L'interface est conçue pour mettre l'utilisateur dans des conditions proches d'un entretien réel.
+
+2. **Vous renseignez votre profil** : votre domaine de compétences (ex. « développement web »), le type de poste visé (ex. « développeur full-stack junior ») et éventuellement les points que vous souhaitez travailler (ex. « gestion du stress, structurer mes réponses »).
+
+3. **L'IA génère une question d'entretien personnalisée** à partir de votre profil. Un modèle de langage (LLM) formule une question sur mesure, adaptée à votre domaine et à votre poste. Par exemple, pour un profil « marketing digital / chef de projet », l'IA pourrait demander : *« Racontez-moi une situation dans laquelle vous avez dû gérer un conflit avec un prestataire externe tout en respectant un deadline serré. »*
+
+4. **Vous cliquez sur le bouton d'enregistrement** et vous répondez oralement à la question, comme vous le feriez en vrai entretien. Vous parlez dans votre micro pendant 30 secondes à quelques minutes.
+
+5. **Vous arrêtez l'enregistrement.** L'analyse démarre automatiquement et les résultats apparaissent en temps réel, étape par étape, directement dans l'interface.
+
+6. **Vous recevez votre score, votre rapport détaillé et des conseils personnalisés.** Tout est affiché dans l'interface, et vous pouvez copier ou télécharger le rapport complet.
+
+### 2.2 Le simulateur d'entretien
+
+Le simulateur est le cœur de l'expérience utilisateur. Il ne se contente pas d'analyser un fichier audio — il **simule un vrai entretien** en trois temps :
+
+**Étape 1 — Génération de la question**
+Grâce à un LLM local (Llama 3.2 via Ollama), l'application génère une question d'entretien réaliste et pertinente. Le modèle joue le rôle d'un recruteur RH senior et adapte la question au profil du candidat. Cela permet de :
+- S'entraîner sur des questions variées à chaque session
+- Cibler des compétences comportementales spécifiques (leadership, gestion de conflit, travail en équipe…)
+- Reproduire la surprise d'une vraie question d'entretien (on ne connaît pas la question à l'avance)
+
+**Étape 2 — Enregistrement de la réponse**
+L'utilisateur répond oralement via son micro. L'enregistrement est capturé directement dans le navigateur (MediaRecorder API) — aucun logiciel externe n'est nécessaire.
+
+**Étape 3 — Analyse complète et rapport**
+Dès la fin de l'enregistrement, l'application lance un pipeline complet d'analyse qui évalue la voix, le discours, l'émotion, et calcule un score global. Le rapport s'affiche en temps réel (ligne par ligne, en streaming) pour une expérience fluide.
+
+### 2.3 Ce qui est analysé dans votre prise de parole
+
+L'application évalue **7 dimensions** de votre prise de parole. Voici ce que chacune mesure et pourquoi c'est important :
+
+| Dimension | Ce qui est évalué | Pourquoi c'est important en entretien |
+|---|---|---|
+| **Volume de la voix** | Intensité sonore moyenne de votre discours | Un volume trop faible donne une impression de manque de confiance ; trop fort, d'agressivité |
+| **Débit de parole** | Nombre de mots prononcés par minute | Un débit trop rapide trahit le stress et rend le discours difficile à suivre ; trop lent, il ennuie |
+| **Gestion des silences** | Proportion du temps de parole vs le temps total | Des pauses bien placées structurent le discours ; trop de silences révèlent des hésitations |
+| **Émotion détectée** | Classification « Calme » ou « Stressé » à partir des caractéristiques acoustiques | Le contrôle émotionnel est un critère clé : un candidat calme inspire davantage confiance |
+| **Sentiment du discours** | Tonalité globale (positive, neutre ou négative) du contenu textuel | Un discours positif et engagé fait meilleure impression qu'un discours négatif ou défaitiste |
+| **Tics de langage** | Comptage des mots parasites (« euh », « du coup », « voilà », « en fait », « bah »…) | Les tics de langage fragmentent le discours et pénalisent fortement la perception de professionnalisme |
+| **Richesse du discours** | Nombre de mots, développement des réponses | Une réponse trop courte est insuffisante ; une réponse développée avec des exemples concrets est valorisée |
+
+### 2.4 Le score global : comment il est calculé
+
+Le score final est une **note sur 100** qui résume la qualité globale de votre prise de parole. Il est calculé en deux temps :
+
+**1. Score de base (Random Forest)**
+Un modèle de Machine Learning (Random Forest) combine les 6 métriques principales (volume, débit, pauses, sentiment, taux de tics, stress) pour prédire un score brut. Ce modèle a été entraîné sur 2 000 sessions simulées avec des profils variés. Il apprend les relations non linéaires entre les métriques — par exemple, un débit rapide n'est pas toujours mauvais, mais combiné à un taux élevé de tics, il devient pénalisant.
+
+**2. Gardes-fous et pénalités**
+Le score brut est ensuite ajusté par des règles métier inspirées des grilles d'évaluation RH :
+- **Tics de langage excessifs** : si plus de 25% de vos mots sont des tics, le score est plafonné à 20/100, quel que soit le score du modèle. C'est le critère le plus pénalisant, car un recruteur relève immédiatement les « euh » et « du coup » répétés.
+- **Débit trop rapide** : au-delà de 220 mots/minute, le score est plafonné à 55/100.
+- Des seuils intermédiaires s'appliquent pour les cas modérés.
+
+**Interprétation du score :**
+
+| Score | Interprétation |
+|---|---|
+| 76 – 100 | **Excellent** — performance convaincante, prêt pour un entretien réel |
+| 46 – 75 | **Moyen** — des qualités visibles mais des axes d'amélioration à travailler |
+| 21 – 45 | **À améliorer** — plusieurs dimensions sont en dessous des attentes |
+| 0 – 20 | **Insuffisant** — préparation approfondie nécessaire avant un entretien réel |
+
+### 2.5 Le rapport d'analyse détaillé
+
+Au-delà du score, l'application génère un **rapport complet en 6 sections**, rédigé dans un style de feedback professionnel RH :
+
+**Section 1 — Résumé global**
+Un paragraphe de synthèse qui donne le ton : performance globale, émotion perçue, sentiment dominant. Ce résumé correspond à ce qu'un recruteur penserait en 30 secondes.
+
+**Section 2 — Analyse détaillée des scores**
+Chaque métrique est analysée individuellement avec un verdict (excellent, correct, insuffisant…) et une explication concrète. Par exemple : *« Débit vocal : 142 mots/min (Modéré) → Idéal. Le rythme favorise la compréhension et maintient l'attention de l'interlocuteur. »*
+
+**Section 3 — Analyse de la transcription**
+La transcription complète de votre discours est affichée, suivie d'une analyse de la longueur (trop courte ? bien développée ?), de la richesse lexicale et du détail précis de chaque tic de langage détecté avec son nombre d'occurrences.
+
+**Section 4 — Feedback personnalisé**
+Deux listes concrètes :
+- **Points forts** : ce que vous faites bien (ex. « Volume vocal adapté — la voix est bien projetée et agréable à entendre »)
+- **Axes d'amélioration** : ce qu'il faut travailler en priorité (ex. « Éliminer les tics de langage — 7 occurrences de "euh" et "du coup" détectées »)
+
+**Section 5 — Conseils pratiques**
+Des recommandations actionnables pour progresser : méthode STAR pour structurer les réponses, exercices de respiration pour gérer le stress, techniques pour réduire les tics de langage, etc.
+
+**Section 6 — Conclusion IA (optionnelle)**
+Si le LLM local (Ollama) est disponible, une conclusion personnalisée est générée par intelligence artificielle. Elle synthétise les résultats en 4 à 6 phrases dans un ton de coach RH bienveillant mais objectif. Cette section est affichée en streaming (token par token) pour une expérience instantanée.
+
+### 2.6 Analyse de pertinence par intelligence artificielle
+
+Lorsque le simulateur est utilisé avec une question générée (mode entretien complet), une analyse supplémentaire est réalisée :
+
+L'IA compare **la question posée** avec **votre réponse transcrite** et évalue :
+- Le candidat a-t-il bien compris la question ?
+- La réponse est-elle structurée et argumentée ?
+- Les exemples donnés sont-ils pertinents pour le poste visé ?
+- Quels conseils concrets pour améliorer cette réponse ?
+
+Cette analyse est particulièrement utile pour travailler le **fond** de la réponse (pas seulement la forme vocale). Elle est affichée en streaming, juste après le rapport, pour un feedback complet en une seule session.
+
+### 2.7 Exemples de résultats concrets
+
+Voici à quoi ressemblent les résultats selon différents profils de candidats :
+
+**Candidat à l'aise (score ~80/100)**
+> Score : 82/100 — Excellent. Volume bien projeté, débit idéal (135 mots/min), aucun tic de langage, émotion calme. Rapport : « Le candidat démontre une aisance à l'oral et une très bonne maîtrise de l'expression en entretien. Son discours est fluide, structuré et convaincant. »
+
+**Candidat stressé avec tics (score ~35/100)**
+> Score : 35/100 — À améliorer. Débit rapide (195 mots/min), 8 tics de langage détectés ("euh" x4, "du coup" x3, "voilà" x1), émotion stressée, pauses rares (8%). Rapport : « L'entretien met en évidence plusieurs difficultés nécessitant un travail préparatoire sérieux, notamment sur la fluidité et la maîtrise du stress. »
+
+**Candidat réservé (score ~55/100)**
+> Score : 55/100 — Moyen. Volume faible, débit lent (95 mots/min), peu de tics mais réponse courte (22 mots). Rapport : « L'entretien révèle des qualités intéressantes mais les réponses pourraient être davantage développées avec des exemples concrets. »
+
+L'objectif est que le candidat puisse **s'entraîner plusieurs fois**, comparer ses scores et progresser session après session sur les dimensions identifiées comme faibles.
+
+---
+
+## 3. Architecture
 
 ```mermaid
 flowchart TD
@@ -74,7 +209,7 @@ flowchart TD
 
 ---
 
-## 3. Pipeline d'analyse temps réel
+## 4. Pipeline d'analyse temps réel
 
 ```
 ① Réception du fichier audio (WAV via MediaRecorder)
@@ -93,9 +228,9 @@ flowchart TD
 
 ---
 
-## 4. Modèles — Fonctionnement & Entraînement
+## 5. Modèles — Fonctionnement & Entraînement
 
-### 4.1 AudioEngine
+### 5.1 AudioEngine
 
 Features extraites via `librosa` et `Silero-VAD` :
 
@@ -112,7 +247,7 @@ Vecteur d'entrée DL :
 dl_input_vector = [rms, zcr, spectral_centroid/1000.0, tempo/200.0, pause_ratio]
 ```
 
-### 4.2 Modèle DL — SimpleAudioNet (PyTorch)
+### 5.2 Modèle DL — SimpleAudioNet (PyTorch)
 
 Architecture :
 ```
@@ -127,14 +262,14 @@ Hyperparamètres : `epochs=50`, `batch_size=16`, `Adam(lr=0.001)`, `CrossEntropy
 - `train_loss`, `test_accuracy`, `test_f1` par epoch (courbes de convergence)
 - En fin d'entraînement : `precision`, `recall`, matrice de confusion (JSON), rapport de classification (texte)
 
-### 4.3 Transcription — Whisper
+### 5.3 Transcription — Whisper
 
 Whisper `base` (74M params), `language="fr"`, avec prompt d'amorçage ciblant les hésitations françaises :
 ```python
 initial_prompt = "C'est un entretien d'embauche. Le candidat hésite souvent, il dit euh, bah, voilà, du coup."
 ```
 
-### 4.4 NLPEngine — DistilCamemBERT
+### 5.4 NLPEngine — DistilCamemBERT
 
 - **Modèle** : `cmarkea/distilcamembert-base-sentiment` — distillation de CamemBERT, nativement français
 - **Tâche** : classification 5 classes (1 à 5 étoiles) → score continu [-1, +1] par moyenne pondérée
@@ -146,9 +281,9 @@ score = sum( (i-3)/2 * p_i  for i in [1..5] )
 - **Tics de langage** : détection Regex `\b mot \b` sur liste configurable (`config/settings.yaml`)
 - **Truncation** : 2048 caractères (≈ 512 tokens, limite du modèle)
 
-### 4.5 Modèle ML — Random Forest Regressor
+### 5.5 Modèle ML — Random Forest Regressor
 
-Features : `['volume', 'tempo', 'pause_ratio', 'sentiment', 'filler_count', 'stress_level']`
+Features : `['volume', 'tempo', 'pause_ratio', 'sentiment', 'filler_rate', 'stress_level']`
 
 Hyperparamètres : `n_estimators=100`, `max_depth=10`, `test_size=20%`, `random_state=42`
 
@@ -158,7 +293,7 @@ Hyperparamètres : `n_estimators=100`, `max_depth=10`, `test_size=20%`, `random_
 - Importance des 6 features
 - Artefact JSON d'évaluation complet (`evaluation_summary.json`)
 
-### 4.6 Rapport structuré — Générateur basé sur règles
+### 5.6 Rapport structuré — Générateur basé sur règles
 
 `src/processors/report_generator.py` — 5 sections déterministes :
 
@@ -170,7 +305,7 @@ Hyperparamètres : `n_estimators=100`, `max_depth=10`, `test_size=20%`, `random_
 | 4. Feedback personnalisé | Points forts + axes d'amélioration ciblés |
 | 5. Conseils pratiques | Recommandations concrètes (méthode STAR, respiration, débit...) |
 
-### 4.7 Endpoints d'entraînement
+### 5.7 Endpoints d'entraînement
 
 | Route | Méthode | Effet |
 |---|---|---|
@@ -179,7 +314,7 @@ Hyperparamètres : `n_estimators=100`, `max_depth=10`, `test_size=20%`, `random_
 
 ---
 
-## 5. Métriques évaluées
+## 6. Métriques évaluées
 
 | Modèle | Métrique | Valeur typique |
 |---|---|---|
@@ -192,7 +327,7 @@ Hyperparamètres : `n_estimators=100`, `max_depth=10`, `test_size=20%`, `random_
 
 ---
 
-## 6. MLOps — Tracking & Monitoring
+## 7. MLOps — Tracking & Monitoring
 
 ### MLflow — Expériences d'entraînement
 
@@ -223,7 +358,7 @@ Hyperparamètres : `n_estimators=100`, `max_depth=10`, `test_size=20%`, `random_
 
 ---
 
-## 7. Données d'entraînement
+## 8. Données d'entraînement
 
 `storage/fake_sessions.csv` — 2000 sessions synthétiques, 12% de bruit de labels
 
@@ -231,14 +366,23 @@ Distribution par classe :
 - `label=1` (Stressé) : `volume~N(0.05, 0.03)`, `bpm~N(130, 25)`, `pause_ratio~N(0.35, 0.15)`
 - `label=0` (Calme)   : `volume~N(0.07, 0.04)`, `bpm~N(110, 20)`, `pause_ratio~N(0.18, 0.10)`
 
-Formule du score cible :
+Formule du score cible (pondération multi-critères) :
 ```python
-target_score = 85 - pause_ratio*60 - filler_count*3 + sentiment*10 - label*5 + bruit(+-12)
+raw_score = (
+    _score_filler_rate(filler_rate) * 0.35   # tics de langage (pénalité quadratique)
+    + _score_tempo(wpm)             * 0.18   # débit vocal
+    + ((sentiment + 1) * 50)        * 0.14   # positivité (-1→0, +1→100)
+    + _score_volume(volume)         * 0.10   # projection
+    + _score_pauses(pause_ratio)    * 0.10   # structure
+    + (30 if stressé else 80)       * 0.08   # contrôle émotionnel
+    + _score_richness(word_count)   * 0.05   # richesse lexicale
+)
+target_score = clamp(0, 100, round(raw_score + bruit_gaussien(±5)))
 ```
 
 ---
 
-## 8. Installation & Lancement
+## 9. Installation & Lancement
 
 ### Docker (recommandé)
 
@@ -277,7 +421,7 @@ make train-ml
 
 ---
 
-## 9. Tests unitaires
+## 10. Tests unitaires
 
 ```bash
 python -m unittest discover -s tests/unit
@@ -293,7 +437,7 @@ make test-nlp
 
 ---
 
-## 10. Structure du projet
+## 11. Structure du projet
 
 ```
 pro8605/
@@ -344,7 +488,7 @@ pro8605/
 
 ---
 
-## 11. Limites & Roadmap
+## 12. Limites & Roadmap
 
 | Aspect | Limite actuelle |
 |---|---|
@@ -354,6 +498,7 @@ pro8605/
 | DistilCamemBERT | Entrainé sur avis produits (1–5 etoiles), pas sur discours d'entretien |
 | Auth | Aucune authentification — usage académique uniquement |
 | Cross-validation DL | Absente pour le modèle PyTorch (présente uniquement pour RF) |
+| Secrets | Mots de passe PostgreSQL en clair dans `settings.yaml` et `docker-compose.yml` — usage académique uniquement |
 
 Roadmap :
 - JWT auth + rôles (candidat / recruteur)
