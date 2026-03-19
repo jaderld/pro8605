@@ -1,25 +1,40 @@
 [flake8]
-# Longueur max : 120 au lieu de 79 (code scientifique/ML souvent verbeux)
 max-line-length = 120
 
-# Ignorer certaines règles non critiques
+# Ignorer certaines règles non critiques :
+# E501  line too long (géré via max-line-length)
+# W503  line break before binary operator (style valide)
+# E722  bare except (acceptable dans les blocs MLflow/Prometheus non bloquants)
+# E302  expected 2 blank lines (moins strict pour ce projet)
+# E303  too many blank lines
+# E305  expected 2 blank lines after function/class definition
+# W291  trailing whitespace
+# W293  whitespace before a comment
+# W292  no newline at end of file
+# E221  multiple spaces before operator (alignement visuel intentionnel)
+# E241  multiple spaces after comma
+# E704  statement on same line as def (fonctions lambda courtes)
+# W605  invalid escape sequence (regex patterns)
+# F401  imported but unused (imports conditionnels / re-export)
+# E401  multiple imports on one line
+# E301  expected 1 blank line
 ignore =
-    E501,   # line too long (géré via max-line-length)
-    W503,   # line break before binary operator (style valide)
-    E722,   # bare except (acceptable dans les blocs MLflow/Prometheus non bloquants)
-    E302,   # expected 2 blank lines (moins strict pour ce projet)
-    E303,   # too many blank lines
-    E305,   # expected 2 blank lines after function/class definition
-    W291,   # trailing whitespace
-    W293,   # whitespace before a comment
-    W292,   # no newline at end of file
-    E221,   # multiple spaces before operator (alignement visuel intentionnel)
-    E241,   # multiple spaces after comma
-    E704,   # statement on same line as def (fonctions lambda courtes)
-    W605,   # invalid escape sequence (regex patterns)
-    F401,   # imported but unused (imports conditionnels / re-export)
-    E401,   # multiple imports on one line
-    E301,   # expected 1 blank line
+    E501,
+    W503,
+    E722,
+    E302,
+    E303,
+    E305,
+    W291,
+    W293,
+    W292,
+    E221,
+    E241,
+    E704,
+    W605,
+    F401,
+    E401,
+    E301
 
 # Exclure les dossiers non pertinents
 exclude =

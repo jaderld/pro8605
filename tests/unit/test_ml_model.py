@@ -50,7 +50,7 @@ class TestScoringModelTrained(unittest.TestCase):
         mock_run.__enter__ = MagicMock(return_value=None)
         mock_run.__exit__ = MagicMock(return_value=False)
         with patch('src.models.ml_model.mlflow') as mock_mlflow, \
-             patch('src.models.ml_model.joblib') as mock_joblib, \
+             patch('src.models.ml_model.joblib'), \
              patch('src.models.ml_model.init_mlflow'), \
              patch('src.models.ml_model.log_params'), \
              patch('src.models.ml_model.log_step_metrics'), \

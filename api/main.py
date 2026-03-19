@@ -406,11 +406,12 @@ async def analyze_stream(
         temp_path, wav_path = _save_upload_as_wav(file)
         ctx = _run_pipeline(wav_path)
         scores_payload = ctx["scores_payload"]
-    except Exception as e:
-        logger.error(f"Erreur analyse stream : {e}")
+    except Exception as exc:
+        logger.error(f"Erreur analyse stream : {exc}")
         API_REQUESTS.labels(endpoint="/analyze_stream/", status="error").inc()
+        err_msg = str(exc)
         async def error_gen():
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': err_msg})}\n\n"
         return StreamingResponse(error_gen(), media_type="text/event-stream")
     finally:
         _cleanup_temp_files(temp_path, wav_path)

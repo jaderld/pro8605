@@ -76,7 +76,6 @@ class InterviewModel:
         """Transcription via Whisper avec Prompt Engineering pour les tics."""
         start_time = time.time()
         audio, sr = librosa.load(audio_path, sr=16000)
-        audio_duration_s = len(audio) / sr
 
         # Prompt pour forcer Whisper à transcrire les hésitations sans les censurer
         tic_prompt = "C'est un entretien d'embauche. Le candidat hésite souvent, il dit euh, bah, voilà, du coup."

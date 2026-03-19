@@ -78,7 +78,7 @@ class ScoringModel:
             kf = KFold(n_splits=5, shuffle=True, random_state=42)
             rf_cv = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
             cv_mae_scores = -cross_val_score(rf_cv, X, y, cv=kf, scoring="neg_mean_absolute_error")
-            cv_r2_scores  =  cross_val_score(rf_cv, X, y, cv=kf, scoring="r2")
+            cv_r2_scores = cross_val_score(rf_cv, X, y, cv=kf, scoring="r2")
 
             cv_mae_mean  = float(np.mean(cv_mae_scores))
             cv_mae_std   = float(np.std(cv_mae_scores))
@@ -132,7 +132,7 @@ class ScoringModel:
     def predict_score(self, audio_features, nlp_results, emotion_data):
         """Inférence : Fusionne les données en temps réel pour sortir la note."""
         if self.model is None:
-            return 50.0 # Score par défaut si pas de modèle
+            return 50.0  # Score par défaut si pas de modèle
             
         # Reconstruction du vecteur de fusion identique à l'entraînement
         # Note : emotion_data['emotion'] est converti en 1.0 (Stressé) ou 0.0 (Calme)
