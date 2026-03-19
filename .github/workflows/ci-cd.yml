@@ -36,12 +36,14 @@ jobs:
 
       - name: Install Python dependencies
         run: |
+          set -ex
           python -m pip install --upgrade pip
           pip install flake8
           # Installer torch CPU depuis l'index dédié (avant le reste)
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          # Installer le reste sans la ligne --extra-index-url (déjà gérée ci-dessus)
-          grep -v '^--extra-index-url' requirements.txt | pip install -r /dev/stdin
+          # Générer un requirements filtré (sans --extra-index-url)
+          grep -v '^--extra-index-url' requirements.txt > requirements-ci.txt
+          pip install -r requirements-ci.txt
 
       - name: Lint with flake8
         run: |
