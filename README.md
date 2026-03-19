@@ -37,7 +37,7 @@
 
 ## 1. Vue d'ensemble
 
-PRO8605 est une plateforme web full-stack permettant à un candidat (ou formateur RH) d'enregistrer une prise de parole depuis le navigateur et d'obtenir en retour une **analyse automatique complète** de ses soft skills :
+Ce projet est une plateforme web full-stack permettant à un candidat (ou formateur RH) d'enregistrer une prise de parole depuis le navigateur et d'obtenir en retour une **analyse automatique complète** de ses soft skills :
 
 | Dimension | Ce qui est mesuré |
 |---|---|
@@ -51,7 +51,7 @@ PRO8605 est une plateforme web full-stack permettant à un candidat (ou formateu
 
 ## 2. Guide fonctionnel — Ce que fait le projet
 
-PRO8605 est un **simulateur d'entretien professionnel** conçu pour aider les candidats à améliorer leur prise de parole avant un vrai entretien d'embauche. L'idée est simple : vous parlez dans votre micro comme si vous répondiez à une question d'entretien, et l'application vous donne un retour complet sur votre performance — exactement comme un coach RH le ferait, mais de manière instantanée et accessible depuis un navigateur web.
+Ce projet est un **simulateur d'entretien professionnel** conçu pour aider les candidats à améliorer leur prise de parole avant un vrai entretien d'embauche. L'idée est simple : vous parlez dans votre micro comme si vous répondiez à une question d'entretien, et l'application vous donne un retour complet sur votre performance — exactement comme un coach RH le ferait, mais de manière instantanée et accessible depuis un navigateur web.
 
 Le projet s'adresse aussi bien aux **candidats** qui veulent s'entraîner seuls qu'aux **formateurs et cabinets RH** qui souhaitent proposer un outil d'évaluation objectif et reproductible à grande échelle.
 
