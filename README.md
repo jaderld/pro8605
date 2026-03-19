@@ -1,5 +1,7 @@
 # PRO8605 — Plateforme d'Analyse Soft Skills & Simulateur d'Entretien
 
+[![CI/CD Pipeline](https://github.com/jaderld/pro8605/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/jaderld/pro8605/actions/workflows/ci-cd.yml)
+
 > Projet de Fin d'Études — Application B2B d'analyse comportementale audio/texte en temps réel, avec scoring IA, monitoring MLOps et pipeline complet de Machine Learning.
 
 ---
@@ -29,9 +31,10 @@
 7. [MLOps — Tracking & Monitoring](#7-mlops--tracking--monitoring)
 8. [Données d'entraînement](#8-données-dentraînement)
 9. [Installation & Lancement](#9-installation--lancement)
-10. [Tests unitaires](#10-tests-unitaires)
-11. [Structure du projet](#11-structure-du-projet)
-12. [Limites & Roadmap](#12-limites--roadmap)
+10. [CI/CD — Intégration & Déploiement Continu](#10-cicd--intégration--déploiement-continu)
+11. [Tests unitaires](#11-tests-unitaires)
+12. [Structure du projet](#12-structure-du-projet)
+13. [Limites & Roadmap](#13-limites--roadmap)
 
 ---
 
@@ -421,7 +424,68 @@ make train-ml
 
 ---
 
-## 10. Tests unitaires
+## 10. CI/CD — Intégration & Déploiement Continu
+
+Le projet utilise **GitHub Actions** pour automatiser la vérification, les tests et le déploiement à chaque modification du code.
+
+### Pipeline
+
+```
+push / PR sur main
+  │
+  ├── 🔍 Lint (flake8)
+  │       │
+  │       └── 🧪 Tests unitaires + couverture
+  │               │
+  │               ├── 📦 Rapport de couverture (artifact)
+  │               ├── 🔒 Audit sécurité dépendances (pip-audit)
+  │               │
+  │               └── 🐳 Docker Build & Push (GHCR)
+  │                       (uniquement sur push main / tag)
+```
+
+### Jobs
+
+| Job | Déclencheur | Description |
+|---|---|---|
+| **Lint** | push + PR | Vérifie la qualité du code avec flake8 (120 car/ligne, règles projet) |
+| **Test** | après Lint | Exécute les 13 tests unitaires avec `coverage`, génère le rapport XML |
+| **Security** | après Test | Scanne les dépendances Python avec `pip-audit` (vulnérabilités connues) |
+| **Docker** | push main/tag | Build l'image Docker multi-stage, push vers `ghcr.io/jaderld/pro8605` |
+
+### Image Docker
+
+L'image est automatiquement publiée sur **GitHub Container Registry** :
+
+```bash
+# Dernière version
+docker pull ghcr.io/jaderld/pro8605:latest
+
+# Version spécifique (commit SHA)
+docker pull ghcr.io/jaderld/pro8605:<sha>
+
+# Version taggée (ex: v1.0.0)
+docker pull ghcr.io/jaderld/pro8605:1.0.0
+```
+
+### Tags Docker
+
+| Tag | Quand |
+|---|---|
+| `latest` | Chaque push sur `main` |
+| `<sha>` | Chaque push (identifiant unique du commit) |
+| `<version>` | Quand un tag `v*` est poussé (ex: `v1.0.0` → `1.0.0`) |
+
+### Optimisations
+
+- **Cache pip** : les dépendances Python sont mises en cache entre les runs
+- **Cache Docker (GHA)** : les layers Docker sont cachés via GitHub Actions cache
+- **BuildX** : build multi-plateforme avec gestion avancée du cache
+- **Modèles offline** : `TRANSFORMERS_OFFLINE=1` et `HF_HUB_OFFLINE=1` évitent les téléchargements en CI
+
+---
+
+## 11. Tests unitaires
 
 ```bash
 python -m unittest discover -s tests/unit
@@ -437,7 +501,7 @@ make test-nlp
 
 ---
 
-## 11. Structure du projet
+## 12. Structure du projet
 
 ```
 pro8605/
@@ -488,7 +552,7 @@ pro8605/
 
 ---
 
-## 12. Limites & Roadmap
+## 13. Limites & Roadmap
 
 | Aspect | Limite actuelle |
 |---|---|
