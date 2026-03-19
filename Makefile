@@ -1,6 +1,6 @@
 # --- VARIABLES ---
 DOCKER_COMPOSE = docker-compose
-PYTHON = python3
+PYTHON = python
 
 # --- COULEURS ---
 BLUE = \033[1;34m
@@ -47,17 +47,16 @@ ps:
 
 # --- TESTS & SIMULATION ---
 
-# Cette commande permet de tester ton module NLP directement
+# Lance le script d'intégration NLP (textes bruts sans audio)
 test-nlp:
 	@echo "$(BLUE)Test de l'analyse sémantique (Textes avec tics)...$(NC)"
-	$(PYTHON) scripts/simulate_data.py --mode nlp-test
+	$(PYTHON) scripts/test_nlp_bypass.py
 
 simulate:
 	@echo "$(BLUE)Génération de données pour Grafana...$(NC)"
-	$(PYTHON) scripts/simulate_data.py --mode metrics
+	$(PYTHON) scripts/simulate_data.py
 
 # --- NETTOYAGE ---
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
-	rm -rf .pytest_cache
+	$(PYTHON) -c "import shutil, pathlib; [shutil.rmtree(p) for p in pathlib.Path('.').rglob('__pycache__')]; [p.unlink() for p in pathlib.Path('.').rglob('*.pyc')]"
+	$(PYTHON) -c "import shutil, pathlib; shutil.rmtree('.pytest_cache', ignore_errors=True)"

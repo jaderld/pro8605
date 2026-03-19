@@ -8,9 +8,11 @@ services:
     ports:
       - "${MLFLOW_PORT:-5000}:5000"
     command: >
-      mlflow server 
-      --backend-store-uri sqlite:///mlflow/mlflow.db 
-      --default-artifact-root /mlflow/artifacts 
+      mlflow server
+      --backend-store-uri sqlite:///mlflow/mlflow.db
+      --artifacts-destination /mlflow/artifacts
+      --default-artifact-root mlflow-artifacts:/
+      --serve-artifacts
       --host 0.0.0.0
     volumes:
       - ./storage/mlflow:/mlflow
@@ -35,6 +37,14 @@ services:
       dockerfile: api/Dockerfile
     container_name: pro8605_api
     env_file: .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=interviewuser
+      - POSTGRES_PASSWORD=interviewpass
+      - POSTGRES_DB=pro8605
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - OLLAMA_BASE_URL=http://ollama:11434
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
@@ -50,6 +60,7 @@ services:
     depends_on:
       - mlflow
       - postgres
+      - ollama
 
   # --- MONITORING ---
   prometheus:
@@ -74,10 +85,20 @@ services:
       - ./infra/grafana/dashboards_json:/etc/grafana/dashboards_json
       - grafana_data:/var/lib/grafana # Persistance des configs/users
 
+  # --- LLM LOCAL ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: pro8605_ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_models:/root/.ollama   # Modèles persistants entre redémarrages
+
 volumes:
   prometheus_data:
   postgres_data:
   grafana_data:
-  hf_cache:
-  torch_cache:
-  whisper_cache:
+  hf_cache:         # Cache HuggingFace (DistilCamemBERT, Whisper, etc.)
+  torch_cache:      # Cache PyTorch / Silero VAD
+  whisper_cache:    # Cache modèle Whisper
+  ollama_models:    # Modèles Ollama (llama3.2:3b, ~2 Go)

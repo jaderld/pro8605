@@ -7,7 +7,7 @@ torchaudio
 openai-whisper
 librosa
 soundfile
-textblob
+sentencepiece
 scipy
 numpy
 pandas

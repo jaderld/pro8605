@@ -9,8 +9,19 @@ import re
 import librosa
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, f1_score
-from src.monitoring.metrics import TRANSCRIPTION_TIME, AUDIO_STRESS_LEVEL, INFERENCE_TIME, MODEL_CONFIDENCE
+import json
+import tempfile
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    confusion_matrix,
+    classification_report,
+    precision_score,
+    recall_score,
+)
+from src.monitoring.metrics import TRANSCRIPTION_TIME, AUDIO_STRESS_LEVEL, INFERENCE_TIME, MODEL_CONFIDENCE, PROCESSING_TIME
+from src.monitoring.mlflow.setup import init_mlflow
+from src.monitoring.mlflow.utils import log_params, log_step_metrics, log_final_metrics, log_tags
 
 # --- FONCTION PRECLEAN ---
 def preclean(text: str) -> str:
@@ -78,10 +89,11 @@ class InterviewModel:
         )
         
         cleaned_text = preclean(res["text"])
-        
+
         elapsed_s = time.time() - start_time
         TRANSCRIPTION_TIME.observe(elapsed_s)
-        
+        PROCESSING_TIME.labels(module='transcription').observe(elapsed_s)
+
         return cleaned_text
 
     def predict_emotion(self, features):
@@ -103,9 +115,9 @@ class InterviewModel:
         classes = {0: "Calme", 1: "Stressé"}
         result_label = classes.get(predicted_class, "Inconnu")
         
-        # Monitoring MLflow et Prometheus
+        # Monitoring Prometheus
         try:
-            mlflow.log_metric("emotion_confidence", confidence)
+            pass  # mlflow.log_metric hors run supprimé (pas de run actif à l'inférence)
         except: pass
             
         stress_val = 1.0 if result_label == "Stressé" else 0.0
@@ -148,11 +160,13 @@ class InterviewModel:
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(self.classifier.parameters(), lr=0.001)
 
-        mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
-        mlflow.set_experiment("Audionet_DL")
+        init_mlflow("Audionet_DL")
 
         with mlflow.start_run():
-            # Boucle d'entraînement sur le jeu d'entraînement uniquement
+            log_params({"epochs": epochs, "batch_size": batch_size, "lr": 0.001, "architecture": "SimpleAudioNet"})
+            log_tags({"model_type": "pytorch", "task": "emotion_classification"})
+
+            # ── Boucle d'entraînement : métriques loggées à chaque epoch ──
             for epoch in range(epochs):
                 total_loss = 0
                 self.classifier.train()
@@ -164,33 +178,82 @@ class InterviewModel:
                     optimizer.step()
                     total_loss += loss.item()
 
-            # Évaluation sur le jeu de TEST (données jamais vues)
-            self.classifier.eval()
-            with torch.no_grad():
-                outputs = self.classifier(X_test_t)
-                _, predicted = torch.max(outputs.data, 1)
-                all_preds  = predicted.cpu().numpy()
-                all_labels = y_test_t.cpu().numpy()
+                avg_loss = total_loss / len(dataloader)
 
-            accuracy = accuracy_score(all_labels, all_preds)
-            f1 = f1_score(all_labels, all_preds, average='weighted')
-            
-            # Sauvegarde et Logging
+                # Évaluation à chaque epoch sur le jeu de TEST
+                self.classifier.eval()
+                with torch.no_grad():
+                    test_outputs = self.classifier(X_test_t)
+                    _, predicted = torch.max(test_outputs.data, 1)
+                    epoch_preds  = predicted.cpu().numpy()
+                    epoch_labels = y_test_t.cpu().numpy()
+
+                epoch_acc = accuracy_score(epoch_labels, epoch_preds)
+                epoch_f1  = f1_score(epoch_labels, epoch_preds, average='weighted', zero_division=0)
+
+                # Log par epoch → courbe dans MLflow UI
+                log_step_metrics({
+                    "train_loss":     round(avg_loss,   4),
+                    "test_accuracy":  round(epoch_acc,  4),
+                    "test_f1":        round(epoch_f1,   4),
+                }, step=epoch + 1)
+
+                if (epoch + 1) % 10 == 0:
+                    print(f"  Epoch {epoch+1}/{epochs} — loss: {avg_loss:.4f}  acc: {epoch_acc:.3f}  f1: {epoch_f1:.3f}")
+
+            # ── Métriques finales & évaluation complète ───────────────────
+            final_precision = precision_score(epoch_labels, epoch_preds, average='weighted', zero_division=0)
+            final_recall    = recall_score(epoch_labels, epoch_preds, average='weighted', zero_division=0)
+            cm = confusion_matrix(epoch_labels, epoch_preds)
+            report = classification_report(
+                epoch_labels,
+                epoch_preds,
+                target_names=["Calme", "Stressé"],
+                zero_division=0,
+            )
+
+            log_final_metrics({
+                "final_loss":      round(float(avg_loss),       4),
+                "final_accuracy":  round(float(epoch_acc),      4),
+                "final_f1":        round(float(epoch_f1),       4),
+                "final_precision": round(float(final_precision), 4),
+                "final_recall":    round(float(final_recall),    4),
+                # Métriques par classe : TN, FP, FN, TP (matrice 2×2)
+                "tn": int(cm[0, 0]), "fp": int(cm[0, 1]),
+                "fn": int(cm[1, 0]), "tp": int(cm[1, 1]),
+            })
+
+            # Sauvegarde des artefacts d'évaluation dans MLflow
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Rapport texte
+                report_path = os.path.join(tmpdir, "classification_report.txt")
+                with open(report_path, "w", encoding="utf-8") as f:
+                    f.write(report)
+                mlflow.log_artifact(report_path)
+
+                # Matrice de confusion JSON
+                cm_path = os.path.join(tmpdir, "confusion_matrix.json")
+                with open(cm_path, "w", encoding="utf-8") as f:
+                    json.dump({
+                        "labels": ["Calme", "Stressé"],
+                        "matrix": cm.tolist(),
+                    }, f, indent=2)
+                mlflow.log_artifact(cm_path)
+
+            # Sauvegarde du modèle
             model_path = "storage/models/emotion_net.pth"
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             torch.save(self.classifier.state_dict(), model_path)
-            
-            mlflow.log_param("epochs", epochs)
-            mlflow.log_param("batch_size", batch_size)
-            mlflow.log_metric("final_loss", total_loss/len(dataloader))
-            mlflow.log_metric("accuracy", accuracy)
-            mlflow.log_metric("f1_score", f1)
-            
-            print(f"✅ Entraînement terminé. Accuracy: {accuracy:.2f}, F1: {f1:.2f}")
-            
+            mlflow.log_artifact(model_path)
+
+            print(f"✅ Entraînement terminé. Accuracy: {epoch_acc:.2f}  F1: {epoch_f1:.2f}  Précision: {final_precision:.2f}")
+            print(f"   Matrice de confusion :\n{cm}")
+
             return {
-                "status": "success", 
-                "loss": round(total_loss/len(dataloader), 4),
-                "accuracy": round(accuracy, 4),
-                "f1_score": round(f1, 4)
+                "status":    "success",
+                "loss":      round(float(avg_loss),        4),
+                "accuracy":  round(float(epoch_acc),       4),
+                "f1_score":  round(float(epoch_f1),        4),
+                "precision": round(float(final_precision), 4),
+                "recall":    round(float(final_recall),    4),
             }

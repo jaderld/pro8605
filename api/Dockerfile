@@ -32,7 +32,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # 5. Pré-téléchargement des modèles (AVANT le COPY du code pour profiter du cache Docker)
 # Ce layer ne se ré-exécute que si requirements.txt change — pas quand le code change
 RUN mkdir -p /app/.cache/torch/hub /app/.cache/huggingface /app/.cache/whisper
-RUN python -c "from transformers import pipeline; pipeline('text-generation', model='TinyLlama/TinyLlama-1.1B-Chat-v1.0')"
+RUN python -c "from transformers import pipeline; pipeline('text-classification', model='cmarkea/distilcamembert-base-sentiment', top_k=None)"
 RUN python -c "import whisper; whisper.load_model('base')"
 
 # 6. Copie du code source et des assets

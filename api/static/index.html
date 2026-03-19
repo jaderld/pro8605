@@ -110,10 +110,6 @@
         .hero-band {
             background: var(--ink);
             padding: 52px 40px 48px;
-            display: grid;
-            grid-template-columns: 1fr 360px;
-            gap: 48px;
-            align-items: end;
             border-bottom: 1px solid rgba(255,255,255,.1);
         }
 
@@ -159,15 +155,21 @@
             max-width: 480px;
         }
 
-        /* ─── RECORDER WIDGET (hero right) ──────────── */
+        /* ─── RECORDER WIDGET ────────────────────────── */
         .recorder-widget {
             background: rgba(255,255,255,.07);
             border: 1px solid rgba(255,255,255,.16);
             border-radius: var(--r);
             padding: 28px 28px 24px;
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 0;
+            max-width: 480px;
+            margin: 28px auto 0;
+        }
+
+        .recorder-widget.visible {
+            display: flex;
         }
 
         .widget-label {
@@ -228,6 +230,12 @@
 
         #recordBtn.stop:hover {
             box-shadow: 0 0 0 8px rgba(155,43,43,.1);
+        }
+
+        #recordBtn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .pulse-ring {
@@ -292,7 +300,7 @@
             transition: height 0.15s ease;
         }
 
-        #recordBtn.stop ~ .widget-wave .wave-bar {
+        .recorder-widget.recording .wave-bar {
             animation: waveDance 0.8s ease-in-out infinite alternate;
         }
 
@@ -678,6 +686,12 @@
             color: var(--gold-line);
         }
 
+        .btn-outline.btn-disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
         #llmReport {
             padding: 28px 24px;
             font-family: var(--sans);
@@ -687,6 +701,18 @@
             white-space: pre-wrap;
             background: none;
             border: none;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        #llmReport.typing::after {
+            content: '▌';
+            color: var(--gold-line);
+            animation: blink 0.6s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
         }
 
         /* ─── FOOTER ─────────────────────────────────── */
@@ -723,15 +749,168 @@
             text-transform: uppercase;
         }
 
+        /* ─── INTERVIEW SETUP ────────────────────────── */
+        .interview-setup {
+            background: var(--ink);
+            border-top: 1px solid rgba(255,255,255,.08);
+            padding: 40px 40px 44px;
+        }
+
+        .setup-grid {
+            max-width: 1080px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 36px;
+            align-items: start;
+        }
+
+        .setup-form-panel {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: var(--r);
+            padding: 28px 28px 24px;
+        }
+
+        .setup-form-label {
+            font-size: 0.63rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.5);
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.74rem;
+            font-weight: 500;
+            color: rgba(255,255,255,.72);
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            font-family: var(--sans);
+            font-size: 0.78rem;
+            color: #fff;
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 5px;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--gold-line);
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255,255,255,.3);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 12px 20px;
+            font-family: var(--sans);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--ink);
+            background: var(--gold-line);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background .2s, transform .1s;
+            margin-top: 4px;
+        }
+
+        .btn-generate:hover {
+            background: var(--gold);
+        }
+
+        .btn-generate:active {
+            transform: scale(0.98);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .question-panel {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: var(--r);
+            padding: 28px 28px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .question-panel-label {
+            font-size: 0.63rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.5);
+        }
+
+        .question-placeholder {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,.35);
+            line-height: 1.7;
+            font-style: italic;
+        }
+
+        .question-text {
+            font-family: var(--serif);
+            font-size: 1.15rem;
+            font-weight: 400;
+            color: #fff;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .question-text.visible {
+            display: block;
+        }
+
+        .question-hint {
+            font-size: 0.7rem;
+            color: var(--gold-line);
+            display: none;
+        }
+
+        .question-hint.visible {
+            display: block;
+        }
+
         /* ─── RESPONSIVE ─────────────────────────────── */
         @media (max-width: 860px) {
             .topbar { padding: 0 20px; }
-            .hero-band { grid-template-columns: 1fr; padding: 36px 20px 32px; gap: 28px; }
+            .hero-band { padding: 36px 20px 32px; }
             .hero-title { font-size: 2rem; }
             .main { padding: 28px 20px 80px; }
             .overview-row { grid-template-columns: 1fr; }
             .score-tile { min-height: 140px; flex-direction: row; align-items: center; }
             .site-footer { padding: 18px 20px; flex-direction: column; gap: 6px; }
+            .setup-grid { grid-template-columns: 1fr; }
+            .interview-setup { padding: 28px 20px 32px; }
         }
     </style>
 </head>
@@ -768,11 +947,53 @@
                 Conçu pour les candidats comme pour les équipes RH.
             </p>
         </div>
+    </section>
 
-        <div class="recorder-widget">
+    <!-- INTERVIEW SETUP -->
+    <section class="interview-setup">
+        <div class="setup-grid">
+
+            <!-- Formulaire profil candidat -->
+            <div class="setup-form-panel">
+                <span class="setup-form-label">Préparer l'entretien</span>
+                <form id="interviewForm">
+                    <div class="form-group">
+                        <label for="fieldDomain">Domaine de compétences</label>
+                        <input type="text" id="fieldDomain" placeholder="Ex : Développement web, Marketing digital, Finance…" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldPosition">Type de poste recherché</label>
+                        <input type="text" id="fieldPosition" placeholder="Ex : Chef de projet, Développeur senior, Analyste…" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fieldFocus">Points à travailler</label>
+                        <textarea id="fieldFocus" rows="2" placeholder="Ex : Gestion du stress, leadership, prise de décision…"></textarea>
+                    </div>
+                    <button type="submit" class="btn-generate" id="generateBtn">
+                        Générer une question d'entretien
+                    </button>
+                </form>
+            </div>
+
+            <!-- Question générée -->
+            <div class="question-panel">
+                <span class="question-panel-label">Question d'entretien</span>
+                <p class="question-placeholder" id="questionPlaceholder">
+                    Remplissez le formulaire ci-contre puis cliquez sur « Générer » pour obtenir une question d'entretien personnalisée.
+                </p>
+                <p class="question-text" id="questionText"></p>
+                <span class="question-hint" id="questionHint">
+                    Répondez à cette question à l'oral grâce au bouton d'enregistrement ci-dessous.
+                </span>
+            </div>
+
+        </div>
+
+        <!-- Recorder widget (hidden until question is generated) -->
+        <div class="recorder-widget" id="recorderWidget">
             <div class="widget-label">Enregistrement audio</div>
             <div class="widget-center">
-                <button id="recordBtn" class="start" aria-label="Démarrer l'enregistrement">
+                <button id="recordBtn" class="start" disabled aria-label="Démarrer l'enregistrement">
                     <div class="pulse-ring"></div>
                 </button>
                 <div class="widget-text">
@@ -792,6 +1013,7 @@
                 <div class="wave-bar"></div>
             </div>
         </div>
+
     </section>
 
     <!-- MAIN RESULTS -->
@@ -866,18 +1088,6 @@
                             <span class="metric-key">Confiance IA</span>
                             <span class="metric-val" id="confidenceVal">--</span>
                         </div>
-                        <div class="metric-row">
-                            <span class="metric-key">Stress estimé</span>
-                            <span class="metric-val" id="softStress">--</span>
-                        </div>
-                        <div class="metric-row">
-                            <span class="metric-key">Confiance</span>
-                            <span class="metric-val" id="softConfidence">--</span>
-                        </div>
-                        <div class="metric-row">
-                            <span class="metric-key">Dynamisme</span>
-                            <span class="metric-val" id="softDynamism">--</span>
-                        </div>
                     </div>
                 </div>
 
@@ -929,8 +1139,8 @@
                         <span class="report-badge">IA</span>
                     </div>
                     <div class="report-actions">
-                        <button id="copyReport" class="btn-outline">Copier</button>
-                        <button id="downloadReport" class="btn-outline">Télécharger</button>
+                        <button id="copyReport" class="btn-outline btn-disabled">Copier</button>
+                        <button id="downloadReport" class="btn-outline btn-disabled">Télécharger</button>
                     </div>
                 </div>
                 <pre id="llmReport"></pre>

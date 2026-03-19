@@ -6,7 +6,10 @@ import logging
 import os
 import torch
 
-from src.monitoring.metrics import PROCESSING_TIME, AUDIO_FEATURES_GAUGE
+from src.monitoring.metrics import (
+    PROCESSING_TIME, AUDIO_FEATURES_GAUGE,
+    AUDIO_DURATION, AUDIO_PAUSE_RATIO, AUDIO_TEMPO, AUDIO_VOLUME,
+)
 
 class AudioEngine:
     def __init__(self, config_path='config/settings.yaml'):
@@ -71,6 +74,10 @@ class AudioEngine:
             AUDIO_FEATURES_GAUGE.labels(feature='volume').set(rms)
             AUDIO_FEATURES_GAUGE.labels(feature='bpm').set(tempo)
             AUDIO_FEATURES_GAUGE.labels(feature='pause_ratio').set(pause_ratio)
+            AUDIO_DURATION.observe(duration)
+            AUDIO_PAUSE_RATIO.set(round(float(pause_ratio), 4))
+            AUDIO_TEMPO.set(round(float(tempo), 2))
+            AUDIO_VOLUME.set(round(float(rms), 6))
             PROCESSING_TIME.labels(module='audio').observe(time.time() - start_time)
 
             features_vector = np.array([
