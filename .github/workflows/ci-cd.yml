@@ -10,6 +10,12 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
 
+    env:
+      # Empêcher les téléchargements lourds en CI (Whisper, Silero-VAD)
+      TRANSFORMERS_OFFLINE: '1'
+      HF_HUB_OFFLINE: '1'
+      PIP_EXTRA_INDEX_URL: https://download.pytorch.org/whl/cpu
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,10 +24,10 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y ffmpeg libsndfile1
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Cache pip dependencies
         uses: actions/cache@v4
@@ -34,11 +40,11 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install flake8
           pip install -r requirements.txt
 
       - name: Lint with flake8
         run: |
-          pip install flake8
           flake8 . --config=.flake8
 
       - name: Run unit tests
