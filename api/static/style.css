@@ -11,7 +11,7 @@ body {
     color: var(--text);
     margin: 0;
     display: flex;
-    justify_content: center;
+    justify-content: center;
     padding: 20px;
 }
 

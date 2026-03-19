@@ -19,8 +19,7 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_URL = "http://ollama:11434"
 _DEFAULT_MODEL = "llama3.2:3b"
-_TIMEOUT_S = 60  # Ollama sur CPU peut être lent ; 60 s est raisonnable pour 3B params
-
+_TIMEOUT_S = 60
 
 def _build_prompt(
     score: float,

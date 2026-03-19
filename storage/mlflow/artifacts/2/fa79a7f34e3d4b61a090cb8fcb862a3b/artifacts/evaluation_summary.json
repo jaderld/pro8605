@@ -1,0 +1,24 @@
+{
+  "holdout": {
+    "mae": 4.7532,
+    "r2": 0.8552
+  },
+  "cross_validation_5fold": {
+    "mae": {
+      "mean": 4.6117,
+      "std": 0.1102
+    },
+    "r2": {
+      "mean": 0.8538,
+      "std": 0.0062
+    }
+  },
+  "feature_importance": {
+    "volume": 0.0469,
+    "tempo": 0.0401,
+    "pause_ratio": 0.0455,
+    "sentiment": 0.0636,
+    "filler_rate": 0.7913,
+    "stress_level": 0.0126
+  }
+}

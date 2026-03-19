@@ -20,13 +20,13 @@ class ScoringModel:
         
         if os.path.exists(self.model_path):
             self.model = joblib.load(self.model_path)
-            print("✅ Modèle Random Forest chargé.")
+            print("Modèle Random Forest chargé.")
         else:
-            print("ℹ️ Aucun modèle de scoring trouvé. Entraînement requis.")
+            print("Aucun modèle de scoring trouvé. Entraînement requis.")
 
     def train(self, df):
         """Entraîne la Random Forest pour prédire le score final (0-100)."""
-        print("🚀 Entraînement du Random Forest Regressor...")
+        print("Entraînement du Random Forest Regressor...")
 
         # 1. Sélection des Features (Le "Vecteur de Fusion")
         # filler_rate (taux normalisé) remplace filler_count brut :
@@ -120,7 +120,7 @@ class ScoringModel:
             joblib.dump(self.model, self.model_path)
             mlflow.log_artifact(self.model_path)
 
-            print(f"✅ Entraînement ML terminé. MAE: {mae:.2f}, R²: {r2:.2f}")
+            print(f"Entraînement ML terminé. MAE: {mae:.2f}, R²: {r2:.2f}")
 
             return {
                 "mae":         round(float(mae),        4),

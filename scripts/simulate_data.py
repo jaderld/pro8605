@@ -10,11 +10,13 @@ OUTPUT_FILE = 'storage/fake_sessions.csv'
 NUM_SESSIONS = 2000 
 
 def _score_filler_rate(filler_rate: float) -> float:
-    """Pénalise le taux de tics normalisé (fillers/mots).
-    0% → 100, 10% → 80, 25% → 50, 50%+ → 0.
-    Basé sur : un orateur professionnel vise < 5% de mots parasites.
+    """Pénalité progressive (quadratique) : chaque % de tics supplémentaire
+    coûte plus cher que le précédent.
+    0%→100, 3%→94, 5%→82, 8%→55, 10%→30, 12%→0.
+    Basé sur : un orateur professionnel vise < 5 % de mots parasites.
     """
-    return max(0.0, 100.0 - filler_rate * 200.0)
+    fr_pct = filler_rate * 100.0
+    return max(0.0, 100.0 - fr_pct ** 2 * 0.7)
 
 
 def _score_tempo(wpm: float) -> float:
@@ -129,20 +131,20 @@ def generate_session(index):
 
     # ── 4. Score cible : formule pondérée ancrée sur les critères RH ─────
     # Poids inspirés des grilles d'évaluation en communication orale :
-    #   30% tics de langage (critère n°1 des recruteurs)
-    #   20% débit vocal    (énergie, dynamisme)
-    #   15% sentiment      (positivité, engagement)
+    #   35% tics de langage (critère n°1 des recruteurs — pénalité quadratique)
+    #   18% débit vocal    (énergie, dynamisme)
+    #   14% sentiment      (positivité, engagement)
     #   10% volume         (projection, assertivité)
     #   10% pauses         (structure, maîtrise)
-    #   10% émotion/stress (contrôle de soi)
+    #    8% émotion/stress (contrôle de soi)
     #    5% richesse       (développement des réponses)
     raw_score = (
-        _score_filler_rate(filler_rate) * 0.30
-        + _score_tempo(wpm)             * 0.20
-        + ((sentiment + 1) * 50)        * 0.15   # -1→0, 0→50, +1→100
+        _score_filler_rate(filler_rate) * 0.35
+        + _score_tempo(wpm)             * 0.18
+        + ((sentiment + 1) * 50)        * 0.14   # -1→0, 0→50, +1→100
         + _score_volume(volume)         * 0.10
         + _score_pauses(pause_ratio)    * 0.10
-        + (30.0 if label == 1 else 80.0)* 0.10   # stressé pénalisé
+        + (30.0 if label == 1 else 80.0)* 0.08   # stressé pénalisé
         + _score_richness(word_count)   * 0.05
     )
 

@@ -297,6 +297,7 @@ make test-nlp
 
 ```
 pro8605/
+├── .env.example                    (variables d'environnement — à copier en .env)
 ├── api/
 │   ├── Dockerfile
 │   ├── main.py
@@ -328,6 +329,7 @@ pro8605/
 │   └── processors/
 │       ├── audio_engine.py     (librosa + Silero-VAD)
 │       ├── nlp_engine.py       (DistilCamemBERT + Regex)
+│       ├── ollama_client.py    (LLM local — conclusion, questions, pertinence)
 │       └── report_generator.py (rapport structuré 5 sections)
 ├── storage/
 │   ├── fake_sessions.csv

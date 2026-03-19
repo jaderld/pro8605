@@ -11,7 +11,7 @@ from src.processors.nlp_engine import NLPEngine
 from src.models.ml_model import ScoringModel  # <-- Ajout du Modèle ML
 
 def run_test():
-    print("\n🚀 DÉMARRAGE DU TEST NLP + ML (SANS AUDIO)")
+    print("\nDÉMARRAGE DU TEST NLP + ML (SANS AUDIO)")
     print("=========================================")
     
     # --- 2. INITIALISATION DES MOTEURS ---
@@ -70,7 +70,7 @@ def run_test():
             print(f"   L-> Détails: {details}")
 
     print("-" * 80)
-    print("✅ TEST TERMINÉ. Observe les scores selon les TICS et le SENTIMENT !")
+    print("TEST TERMINÉ.")
 
 if __name__ == "__main__":
     run_test()

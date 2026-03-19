@@ -66,11 +66,11 @@ class InterviewModel:
         if os.path.exists(model_path):
             try:
                 self.classifier.load_state_dict(torch.load(model_path, map_location=self.device))
-                print("✅ Modèle d'émotion personnalisé (2 classes) chargé.")
+                print("Modèle d'émotion personnalisé (2 classes) chargé.")
             except Exception as e:
                 print(f"⚠️ Erreur : {e}. Architecture incompatible ou fichier corrompu.")
         else:
-            print("ℹ️ Aucun modèle d'émotion trouvé, utilisation des poids par défaut.")
+            print("Aucun modèle d'émotion trouvé, utilisation des poids par défaut.")
 
     def transcribe_audio(self, audio_path):
         """Transcription via Whisper avec Prompt Engineering pour les tics."""
@@ -128,7 +128,7 @@ class InterviewModel:
     def train_custom_model(self, df, epochs=50, batch_size=16):
         """Entraînement MLOps avec calcul d'Accuracy et F1-Score sur jeu de test."""
         from sklearn.model_selection import train_test_split as sk_split
-        print("🚀 Début de l'entraînement du modèle d'émotion (Architecture Binaire)...")
+        print("Début de l'entraînement du modèle d'émotion (Architecture Binaire)...")
         self.classifier.train()
 
         X, y = [], []
@@ -246,7 +246,7 @@ class InterviewModel:
             torch.save(self.classifier.state_dict(), model_path)
             mlflow.log_artifact(model_path)
 
-            print(f"✅ Entraînement terminé. Accuracy: {epoch_acc:.2f}  F1: {epoch_f1:.2f}  Précision: {final_precision:.2f}")
+            print(f"Entraînement terminé. Accuracy: {epoch_acc:.2f}  F1: {epoch_f1:.2f}  Précision: {final_precision:.2f}")
             print(f"   Matrice de confusion :\n{cm}")
 
             return {
