@@ -52,7 +52,6 @@ services:
       - ./config:/app/config     # Le settings.yaml
       - ./database:/app/database # La base de données
       - ./scripts:/app/scripts
-      - ./storage/tensorboard:/app/storage/tensorboard
       - hf_cache:/app/.cache/huggingface
       - torch_cache:/app/.cache/torch
       - whisper_cache:/app/.cache/whisper
@@ -83,18 +82,6 @@ services:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning
       - ./infra/grafana/dashboards_json:/etc/grafana/dashboards_json
       - grafana_data:/var/lib/grafana # Persistance des configs/users
-
-  # --- TENSORBOARD ---
-  tensorboard:
-    image: python:3.10-slim
-    container_name: pro8605_tensorboard
-    ports:
-      - "${TENSORBOARD_PORT:-6006}:6006"
-    command: >
-      sh -c "pip install --no-cache-dir tensorboard &&
-             tensorboard --logdir=/tensorboard --host=0.0.0.0 --port=6006"
-    volumes:
-      - ./storage/tensorboard:/tensorboard
 
   # --- LLM LOCAL ---
   ollama:

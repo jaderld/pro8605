@@ -24,7 +24,6 @@ pyyaml
 matplotlib
 ffmpeg-python
 transformers
-tensorboard
 
 # ML / Data
 scikit-learn

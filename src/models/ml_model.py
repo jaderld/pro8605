@@ -9,7 +9,6 @@ import joblib
 import mlflow
 import os
 import time
-from torch.utils.tensorboard import SummaryWriter
 from src.monitoring.metrics import INFERENCE_TIME
 from src.monitoring.mlflow.setup import init_mlflow
 from src.monitoring.mlflow.utils import log_params, log_step_metrics, log_final_metrics, log_tags
@@ -43,18 +42,15 @@ class ScoringModel:
         # 3. Configuration du modèle
         self.model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
         
-        # 4. Logging MLflow + TensorBoard
+        # 4. Logging MLflow
         init_mlflow("Final_Scoring_ML")
-        tb_log_dir = os.path.join("storage", "tensorboard", "scoring_rf")
-        os.makedirs(tb_log_dir, exist_ok=True)
-        writer = SummaryWriter(log_dir=tb_log_dir)
 
         with mlflow.start_run():
             log_params({"n_estimators": 100, "max_depth": 10, "random_state": 42})
             log_tags({"model_type": "random_forest", "task": "score_regression"})
 
             # ── Courbe de progression par nombre d'arbres ─────────────────
-            # Permet de voir dans MLflow/TensorBoard quand la forêt commence à converger
+            # Permet de voir dans MLflow quand la forêt commence à converger
             checkpoints = [1, 5, 10, 25, 50, 75, 100]
             for step, n in enumerate(checkpoints, start=1):
                 rf_step = RandomForestRegressor(
@@ -68,8 +64,6 @@ class ScoringModel:
                     "mae":  round(float(mae_step), 4),
                     "r2":   round(float(r2_step),  4),
                 }, step=step)
-                writer.add_scalar("MAE/test", mae_step, n)
-                writer.add_scalar("R2/test", r2_step, n)
                 print(f"  n_estimators={n:>3} — MAE: {mae_step:.3f}  R²: {r2_step:.3f}")
 
             # ── Modèle final (100 arbres) ─────────────────────────────────
@@ -120,13 +114,6 @@ class ScoringModel:
                         "feature_importance": {k: round(v, 4) for k, v in feature_importance.items()},
                     }, f, indent=2)
                 mlflow.log_artifact(eval_path)
-
-            # TensorBoard : hyperparamètres + métriques finales
-            writer.add_hparams(
-                {"n_estimators": 100, "max_depth": 10},
-                {"hparam/mae": mae, "hparam/r2": r2, "hparam/cv_r2": cv_r2_mean},
-            )
-            writer.close()
 
             # Sauvegarde
             os.makedirs(os.path.dirname(self.model_path), exist_ok=True)

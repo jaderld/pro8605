@@ -209,7 +209,6 @@ flowchart TD
 | `postgres` | 5432 | Base de données sessions |
 | `prometheus` | 9090 | Collecte des métriques temps réel |
 | `grafana` | 3000 | Dashboard de visualisation |
-| `tensorboard` | 6006 | Visualisation des courbes d'entraînement (DL & ML) |
 | `ollama` | 11434 | LLM local (llama3.2:3b) — conclusions & questions |
 
 ---
