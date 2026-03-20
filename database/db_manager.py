@@ -39,6 +39,9 @@ class DBManager:
                 sentiment_score REAL,
                 pause_ratio REAL,
                 transcription TEXT,
+                final_score REAL,
+                emotion TEXT,
+                filler_count INTEGER,
                 full_metrics_json TEXT
             )
         '''
@@ -51,11 +54,11 @@ class DBManager:
             conn = self._get_conn()
             cursor = conn.cursor()
             insert_sql = '''
-                INSERT INTO sessions (timestamp, duration, sentiment_score, pause_ratio, transcription, full_metrics_json)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO sessions (timestamp, duration, sentiment_score, pause_ratio, transcription, final_score, emotion, filler_count, full_metrics_json)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''' if self.use_postgres else '''
-                INSERT INTO sessions (timestamp, duration, sentiment_score, pause_ratio, transcription, full_metrics_json)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO sessions (timestamp, duration, sentiment_score, pause_ratio, transcription, final_score, emotion, filler_count, full_metrics_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             '''
             params = (
                 metrics.get('timestamp', datetime.now().isoformat()),
@@ -63,6 +66,9 @@ class DBManager:
                 metrics.get('sentiment_score'),
                 metrics.get('pause_ratio'),
                 metrics.get('transcription'),
+                metrics.get('final_score'),
+                metrics.get('emotion'),
+                metrics.get('filler_count'),
                 json.dumps(metrics)
             )
             cursor.execute(insert_sql, params)

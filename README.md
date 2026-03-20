@@ -183,7 +183,7 @@ L'objectif est que le candidat puisse **s'entraîner plusieurs fois**, comparer 
 
 ```mermaid
 flowchart TD
-  A["Interface Web\n(HTML / JS)"] -->|"POST /analyze_file/"| B["API FastAPI\n(api/main.py)"]
+  A["Interface Web\n(HTML / JS)"] -->|"POST /analyze_stream/"| B["API FastAPI\n(api/main.py)"]
   B --> C["AudioEngine\nlibrosa + Silero-VAD"]
   B --> D["Whisper\nOpenAI base model"]
   B --> E["NLPEngine\nDistilCamemBERT + Regex"]
@@ -209,6 +209,8 @@ flowchart TD
 | `postgres` | 5432 | Base de données sessions |
 | `prometheus` | 9090 | Collecte des métriques temps réel |
 | `grafana` | 3000 | Dashboard de visualisation |
+| `tensorboard` | 6006 | Visualisation des courbes d'entraînement (DL & ML) |
+| `ollama` | 11434 | LLM local (llama3.2:3b) — conclusions & questions |
 
 ---
 

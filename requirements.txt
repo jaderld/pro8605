@@ -3,6 +3,7 @@
 
 # Core IA
 torch
+torchaudio
 openai-whisper
 librosa
 soundfile
@@ -23,6 +24,7 @@ pyyaml
 matplotlib
 ffmpeg-python
 transformers
+tensorboard
 
 # ML / Data
 scikit-learn

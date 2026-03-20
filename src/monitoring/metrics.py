@@ -29,7 +29,12 @@ AUDIO_PAUSE_RATIO = Gauge(
 
 AUDIO_TEMPO = Gauge(
     'audio_tempo_bpm',
-    'Tempo détecté en BPM'
+    'Tempo détecté en BPM (librosa)'
+)
+
+INTERVIEW_WPM = Gauge(
+    'interview_wpm',
+    'Débit de parole réel en mots par minute'
 )
 
 AUDIO_VOLUME = Gauge(
@@ -129,4 +134,26 @@ API_REQUESTS = Counter(
     'api_requests_total',
     'Nombre total de requêtes API',
     ['endpoint', 'status']
+)
+
+# ==========================================
+# MONITORING OPÉRATIONNEL (Trafic / Latence / Erreurs)
+# ==========================================
+
+HTTP_REQUEST_DURATION = Histogram(
+    'http_request_duration_seconds',
+    'Durée des requêtes HTTP de bout en bout',
+    ['method', 'endpoint', 'status_code'],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0, float("inf")]
+)
+
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress',
+    'Nombre de requêtes HTTP en cours de traitement'
+)
+
+HTTP_REQUEST_SIZE = Histogram(
+    'http_request_size_bytes',
+    'Taille des requêtes HTTP entrantes',
+    buckets=[100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, float("inf")]
 )

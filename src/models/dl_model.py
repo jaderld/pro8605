@@ -19,6 +19,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
+from torch.utils.tensorboard import SummaryWriter
 from src.monitoring.metrics import TRANSCRIPTION_TIME, AUDIO_STRESS_LEVEL, INFERENCE_TIME, MODEL_CONFIDENCE, PROCESSING_TIME
 from src.monitoring.mlflow.setup import init_mlflow
 from src.monitoring.mlflow.utils import log_params, log_step_metrics, log_final_metrics, log_tags
@@ -155,10 +156,17 @@ class InterviewModel:
         optimizer = optim.Adam(self.classifier.parameters(), lr=0.001)
 
         init_mlflow("Audionet_DL")
+        tb_log_dir = os.path.join("storage", "tensorboard", "emotion_dl")
+        os.makedirs(tb_log_dir, exist_ok=True)
+        writer = SummaryWriter(log_dir=tb_log_dir)
 
         with mlflow.start_run():
             log_params({"epochs": epochs, "batch_size": batch_size, "lr": 0.001, "architecture": "SimpleAudioNet"})
             log_tags({"model_type": "pytorch", "task": "emotion_classification"})
+
+            # Log du graphe du réseau dans TensorBoard
+            dummy_input = torch.zeros(1, 5).to(self.device)
+            writer.add_graph(self.classifier, dummy_input)
 
             # ── Boucle d'entraînement : métriques loggées à chaque epoch ──
             for epoch in range(epochs):
@@ -191,6 +199,11 @@ class InterviewModel:
                     "test_accuracy":  round(epoch_acc,  4),
                     "test_f1":        round(epoch_f1,   4),
                 }, step=epoch + 1)
+
+                # Log par epoch → courbes dans TensorBoard
+                writer.add_scalar("Loss/train", avg_loss, epoch + 1)
+                writer.add_scalar("Accuracy/test", epoch_acc, epoch + 1)
+                writer.add_scalar("F1/test", epoch_f1, epoch + 1)
 
                 if (epoch + 1) % 10 == 0:
                     print(f"  Epoch {epoch+1}/{epochs} — loss: {avg_loss:.4f}  acc: {epoch_acc:.3f}  f1: {epoch_f1:.3f}")
@@ -239,6 +252,13 @@ class InterviewModel:
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             torch.save(self.classifier.state_dict(), model_path)
             mlflow.log_artifact(model_path)
+
+            # TensorBoard : hyperparamètres + métriques finales
+            writer.add_hparams(
+                {"epochs": epochs, "batch_size": batch_size, "lr": 0.001},
+                {"hparam/accuracy": epoch_acc, "hparam/f1": epoch_f1, "hparam/loss": avg_loss},
+            )
+            writer.close()
 
             print(f"Entraînement terminé. Accuracy: {epoch_acc:.2f}  F1: {epoch_f1:.2f}  Précision: {final_precision:.2f}")
             print(f"   Matrice de confusion :\n{cm}")

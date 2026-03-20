@@ -39,8 +39,8 @@ def run_test():
         "Euh... bah... je ne sais pas trop, genre, c'est compliqué quoi. Je déteste ça."
     ]
 
-    # Faux paramètres audio pour simuler Whisper
-    mock_audio_features = {'pause_ratio': 0.15}
+    # Faux paramètres audio réalistes pour simuler le pipeline complet
+    mock_audio_features = {'volume': 0.06, 'tempo': 120.0, 'pause_ratio': 0.15}
 
     # --- 4. EXÉCUTION ---
     print(f"\n{'PHRASE (Tronquée)':<45} | {'TICS':<5} | {'SENTIMENT':<9} | {'SCORE'}")

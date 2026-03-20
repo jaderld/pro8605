@@ -3,6 +3,7 @@ import json
 import shutil
 import subprocess
 import tempfile
+import time
 import logging
 import yaml
 from fastapi import FastAPI, UploadFile, File, Form
@@ -16,10 +17,14 @@ from src.processors.nlp_engine import NLPEngine
 from src.models.dl_model import InterviewModel
 from src.models.ml_model import ScoringModel
 from src.data_pipeline import DataPipeline
-from src.monitoring.metrics import FINAL_SCORE_GAUGE, BASE_SCORE_GAUGE, SCORE_PENALTY, SCORE_INTERPRETATION, API_REQUESTS, PROCESSING_TIME
+from src.monitoring.metrics import (
+    FINAL_SCORE_GAUGE, BASE_SCORE_GAUGE, SCORE_PENALTY, SCORE_INTERPRETATION,
+    API_REQUESTS, PROCESSING_TIME, INTERVIEW_WPM,
+    HTTP_REQUEST_DURATION, HTTP_REQUESTS_IN_PROGRESS, HTTP_REQUEST_SIZE,
+)
 from database.db_manager import DBManager
 from src.processors.report_generator import generate_structured_report
-from src.processors.ollama_client import generate_conclusion, generate_conclusion_stream, generate_interview_question, generate_relevance_stream
+from src.processors.ollama_client import generate_conclusion_stream, generate_interview_question, generate_relevance_stream
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,6 +55,37 @@ try:
 except Exception as _db_err:
     logger.warning(f"⚠️ PostgreSQL indisponible, fallback SQLite : {_db_err}")
     db_manager = DBManager()
+
+# --- Middleware de monitoring HTTP (trafic / latence / erreurs) ---
+@app.middleware("http")
+async def http_metrics_middleware(request, call_next):
+    """Mesure chaque requête HTTP : durée, statut, taille, concurrence."""
+    if request.url.path.startswith("/metrics"):
+        return await call_next(request)
+    HTTP_REQUESTS_IN_PROGRESS.inc()
+    start = time.time()
+    try:
+        response = await call_next(request)
+    except Exception:
+        HTTP_REQUEST_DURATION.labels(
+            method=request.method,
+            endpoint=request.url.path,
+            status_code="500",
+        ).observe(time.time() - start)
+        HTTP_REQUESTS_IN_PROGRESS.dec()
+        raise
+    duration = time.time() - start
+    HTTP_REQUEST_DURATION.labels(
+        method=request.method,
+        endpoint=request.url.path,
+        status_code=str(response.status_code),
+    ).observe(duration)
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit():
+        HTTP_REQUEST_SIZE.observe(int(content_length))
+    HTTP_REQUESTS_IN_PROGRESS.dec()
+    return response
+
 
 app.mount("/metrics", make_asgi_app())
 app.mount("/static", StaticFiles(directory="api/static"), name="static")
@@ -177,6 +213,7 @@ def _run_pipeline(wav_path: str) -> dict:
     effective_duration = max(1.0, speech_duration if speech_duration > 0 else audio_results.get("meta", {}).get("duration", 1.0))
     wpm = round((max(1, nlp_results.get("word_count", 1)) / effective_duration) * 60, 1)
     features["tempo"] = wpm
+    INTERVIEW_WPM.set(wpm)
 
     # 4. Score global (Random Forest) + gardes-fous hors distribution
     rf_score = max(0, min(100, round(float(ml_model.predict_score(features, nlp_results, emotion_data)), 2)))
@@ -298,87 +335,6 @@ def _save_session(ctx: dict) -> None:
         logger.warning(f"Sauvegarde DB échouée (non bloquant) : {e}")
 
 
-# ==========================================
-# ROUTE D'INFÉRENCE PRINCIPALE
-# ==========================================
-
-@app.post("/analyze_file/", tags=["Analysis"])
-async def analyze_file(file: UploadFile = File(...)):
-    temp_path = None
-    wav_path = None
-    try:
-        temp_path, wav_path = _save_upload_as_wav(file)
-        ctx = _run_pipeline(wav_path)
-
-        full_analysis = dict(ctx["scores_payload"])
-
-        # Rapport structuré + conclusion LLM (Ollama)
-        try:
-            rapport_base, points_forts, axes = generate_structured_report(
-                score=ctx["scores_payload"]["final_score"],
-                interpretation=ctx["interpretation"],
-                sentiment_label=ctx["sentiment_label"],
-                emotion=ctx["emotion_data"].get("emotion", "Neutre"),
-                vol_raw=ctx["vol_raw"],
-                vol_display=ctx["vol_display"],
-                tempo_val=ctx["tempo_val"],
-                label_tempo=ctx["label_tempo"],
-                pause_ratio_pct=ctx["pause_ratio_pct"],
-                filler_count=ctx["filler_count_report"],
-                fillers_dict=ctx["fillers"] if isinstance(ctx["fillers"], dict) else {},
-                transcription=ctx["transcription"],
-                word_count=ctx["nlp_results"].get("word_count", 0),
-                llm_conclusion=None,
-            )
-
-            llm_conclusion = generate_conclusion(
-                score=ctx["scores_payload"]["final_score"],
-                interpretation=ctx["interpretation"],
-                emotion=ctx["emotion_data"].get("emotion", "Neutre"),
-                sentiment_label=ctx["sentiment_label"],
-                filler_count=ctx["filler_count_report"],
-                tempo_val=ctx["tempo_val"],
-                pause_ratio_pct=ctx["pause_ratio_pct"],
-                word_count=ctx["nlp_results"].get("word_count", 0),
-                points_forts=points_forts,
-                axes=axes,
-            )
-
-            if llm_conclusion:
-                rapport, _, _ = generate_structured_report(
-                    score=ctx["scores_payload"]["final_score"],
-                    interpretation=ctx["interpretation"],
-                    sentiment_label=ctx["sentiment_label"],
-                    emotion=ctx["emotion_data"].get("emotion", "Neutre"),
-                    vol_raw=ctx["vol_raw"],
-                    vol_display=ctx["vol_display"],
-                    tempo_val=ctx["tempo_val"],
-                    label_tempo=ctx["label_tempo"],
-                    pause_ratio_pct=ctx["pause_ratio_pct"],
-                    filler_count=ctx["filler_count_report"],
-                    fillers_dict=ctx["fillers"] if isinstance(ctx["fillers"], dict) else {},
-                    transcription=ctx["transcription"],
-                    word_count=ctx["nlp_results"].get("word_count", 0),
-                    llm_conclusion=llm_conclusion,
-                )
-            else:
-                rapport = rapport_base
-
-            full_analysis["llm_report"] = rapport
-        except Exception as e:
-            logger.error(f"Erreur génération rapport : {e}")
-            full_analysis["llm_report"] = "Rapport non disponible."
-
-        _save_session(ctx)
-        API_REQUESTS.labels(endpoint="/analyze_file/", status="success").inc()
-        return JSONResponse(content=full_analysis)
-
-    except Exception as e:
-        logger.error(f"Erreur analyse : {e}")
-        API_REQUESTS.labels(endpoint="/analyze_file/", status="error").inc()
-        return JSONResponse(status_code=500, content={"error": str(e)})
-    finally:
-        _cleanup_temp_files(temp_path, wav_path)
 
 
 # ==========================================
@@ -450,7 +406,7 @@ async def analyze_stream(
         # Phase 3 : conclusion LLM en streaming token par token
         try:
             sep = "─" * 60
-            for line in [sep, "6. CONCLUSION PERSONNALISÉE", sep]:
+            for line in [sep, "6. CONCLUSION PERSONNALISÉE", sep, ""]:
                 yield f"data: {json.dumps({'type': 'report_line', 'text': line})}\n\n"
 
             has_tokens = False

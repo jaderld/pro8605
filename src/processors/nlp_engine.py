@@ -67,6 +67,8 @@ class NLPEngine:
     def _preclean(self, text: str) -> str:
         """Normalisation du texte : minuscules, ponctuation, espaces."""
         t = text.lower()
+        t = re.sub(r"(\d)([a-z])", r"\1 \2", t)
+        t = re.sub(r"([a-z])(\d)", r"\1 \2", t)
         t = re.sub(r"([a-z0-9])([.,!?])([a-z0-9])", r"\1\2 \3", t)
         t = re.sub(r"\s+", " ", t).strip()
         return t

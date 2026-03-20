@@ -34,6 +34,8 @@ up:
 	@echo "  - MLflow          : http://localhost:5000"
 	@echo "  - Prometheus      : http://localhost:9090"
 	@echo "  - Grafana         : http://localhost:3000"
+	@echo "  - TensorBoard     : http://localhost:6006"
+	@echo "  - Ollama          : http://localhost:11434"
 
 down:
 	$(DOCKER_COMPOSE) down

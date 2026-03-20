@@ -1,16 +1,19 @@
 {
   "annotations": { "list": [] },
-  "title": "PRO8605 — Pipeline d'analyse",
+  "title": "PRO8605 — Monitoring",
   "schemaVersion": 30,
-  "version": 3,
+  "version": 4,
   "refresh": "10s",
   "panels": [
 
-    { "type": "text", "id": 100, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
-      "options": { "mode": "markdown", "content": "## 🎵 Étape 1 — Extraction Audio" } },
+    { "type": "text", "id": 200, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
+      "options": { "mode": "markdown", "content": "# Metriques Metier" } },
+
+    { "type": "text", "id": 100, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 2 },
+      "options": { "mode": "markdown", "content": "### Extraction Audio" } },
 
     { "datasource": "Prometheus", "type": "gauge", "id": 1,
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 2 },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 4 },
       "title": "Volume RMS",
       "fieldConfig": { "defaults": { "min": 0, "max": 0.2, "unit": "short",
         "thresholds": { "mode": "absolute", "steps": [
@@ -19,16 +22,25 @@
       "targets": [{ "expr": "audio_volume_rms", "legendFormat": "Volume", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "gauge", "id": 2,
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 2 },
-      "title": "Tempo (BPM)",
+      "gridPos": { "h": 6, "w": 4, "x": 6, "y": 4 },
+      "title": "Tempo (BPM librosa)",
       "fieldConfig": { "defaults": { "min": 60, "max": 200, "unit": "short",
         "thresholds": { "mode": "absolute", "steps": [
           { "value": 0, "color": "blue" }, { "value": 90, "color": "green" }, { "value": 130, "color": "orange" }, { "value": 160, "color": "red" }
         ]}}, "overrides": [] },
-      "targets": [{ "expr": "audio_tempo_bpm", "legendFormat": "Tempo BPM", "refId": "A" }] },
+      "targets": [{ "expr": "audio_tempo_bpm", "legendFormat": "BPM", "refId": "A" }] },
+
+    { "datasource": "Prometheus", "type": "gauge", "id": 19,
+      "gridPos": { "h": 6, "w": 4, "x": 10, "y": 4 },
+      "title": "Debit de parole (WPM)",
+      "fieldConfig": { "defaults": { "min": 60, "max": 250, "unit": "short",
+        "thresholds": { "mode": "absolute", "steps": [
+          { "value": 0, "color": "blue" }, { "value": 110, "color": "green" }, { "value": 170, "color": "orange" }, { "value": 220, "color": "red" }
+        ]}}, "overrides": [] },
+      "targets": [{ "expr": "interview_wpm", "legendFormat": "WPM", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "gauge", "id": 3,
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 2 },
+      "gridPos": { "h": 6, "w": 4, "x": 14, "y": 4 },
       "title": "Ratio de pauses",
       "fieldConfig": { "defaults": { "min": 0, "max": 1, "unit": "percentunit",
         "thresholds": { "mode": "absolute", "steps": [
@@ -37,74 +49,76 @@
       "targets": [{ "expr": "audio_pause_ratio", "legendFormat": "Pauses", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 4,
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 2 },
-      "title": "Durée des audios analysés (distribution)",
-      "targets": [{ "expr": "rate(audio_duration_seconds_sum[5m]) / rate(audio_duration_seconds_count[5m])", "legendFormat": "Durée moy. (s)", "refId": "A" }] },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 4 },
+      "title": "Duree des audios analyses",
+      "targets": [{ "expr": "rate(audio_duration_seconds_sum[5m]) / rate(audio_duration_seconds_count[5m])", "legendFormat": "Duree moy. (s)", "refId": "A" }] },
 
-    { "type": "text", "id": 101, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 8 },
-      "options": { "mode": "markdown", "content": "## 🎤 Étape 2 — Transcription (Whisper)" } },
+    { "type": "text", "id": 101, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 10 },
+      "options": { "mode": "markdown", "content": "### Transcription (Whisper)" } },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 5,
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 10 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
       "title": "Temps de transcription Whisper (s)",
-      "targets": [{ "expr": "rate(dl_transcription_time_seconds_sum[5m]) / rate(dl_transcription_time_seconds_count[5m])", "legendFormat": "Durée moy. transcription", "refId": "A" }] },
+      "targets": [{ "expr": "rate(dl_transcription_time_seconds_sum[5m]) / rate(dl_transcription_time_seconds_count[5m])", "legendFormat": "Duree moy. transcription", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 6,
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 10 },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
       "title": "Nombre de mots par transcription",
       "targets": [{ "expr": "rate(transcription_word_count_sum[5m]) / rate(transcription_word_count_count[5m])", "legendFormat": "Mots moy. par analyse", "refId": "A" }] },
 
-    { "type": "text", "id": 102, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 16 },
-      "options": { "mode": "markdown", "content": "## 📝 Étape 3 — Analyse NLP" } },
+    { "type": "text", "id": 102, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 18 },
+      "options": { "mode": "markdown", "content": "### Analyse NLP" } },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 7,
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 18 },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 20 },
       "title": "Score de sentiment",
       "fieldConfig": { "defaults": { "min": -1, "max": 1,
         "thresholds": { "mode": "absolute", "steps": [
           { "value": -1, "color": "red" }, { "value": -0.1, "color": "yellow" }, { "value": 0.1, "color": "green" }
         ]}}, "overrides": [] },
-      "targets": [{ "expr": "nlp_sentiment_score", "legendFormat": "Sentiment (-1 → 1)", "refId": "A" }] },
+      "targets": [{ "expr": "nlp_sentiment_score", "legendFormat": "Sentiment (-1 a 1)", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 8,
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 18 },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 20 },
       "title": "Tics de langage (taux / min)",
-      "targets": [{ "expr": "rate(nlp_filler_words_total[1m])", "legendFormat": "Tics / min", "refId": "A" }] },
+      "targets": [{ "expr": "rate(nlp_filler_words_total[5m])", "legendFormat": "Tics / min", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 9,
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 18 },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 20 },
       "title": "Tics par analyse (moyenne glissante)",
       "targets": [{ "expr": "rate(nlp_filler_words_per_analysis_sum[5m]) / rate(nlp_filler_words_per_analysis_count[5m])", "legendFormat": "Tics moy. par analyse", "refId": "A" }] },
 
-    { "type": "text", "id": 103, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 24 },
-      "options": { "mode": "markdown", "content": "## 🤖 Étape 4 — Modèle IA (Émotion)" } },
+    { "type": "text", "id": 103, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 26 },
+      "options": { "mode": "markdown", "content": "### Modele IA (Emotion)" } },
 
     { "datasource": "Prometheus", "type": "stat", "id": 10,
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 26 },
-      "title": "État émotionnel (0=Calme, 1=Stressé)",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 28 },
+      "title": "Etat emotionnel detecte",
       "fieldConfig": { "defaults": { "min": 0, "max": 1,
-        "mappings": [{ "type": "range", "options": { "from": 0, "to": 0.4, "result": { "text": "Calme 😊", "color": "green" }}, "id": 1 },
-          { "type": "range", "options": { "from": 0.5, "to": 1, "result": { "text": "Stressé 😰", "color": "red" }}, "id": 2 }],
+        "mappings": [
+          { "type": "range", "options": { "from": 0, "to": 0.4, "result": { "text": "Calme", "color": "green" }}, "id": 1 },
+          { "type": "range", "options": { "from": 0.5, "to": 1, "result": { "text": "Stresse", "color": "red" }}, "id": 2 }
+        ],
         "thresholds": { "mode": "absolute", "steps": [{ "value": 0, "color": "green" }, { "value": 0.5, "color": "red" }]}
       }, "overrides": [] },
       "targets": [{ "expr": "audio_stress_level", "legendFormat": "Stress", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 11,
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 26 },
-      "title": "Confiance du modèle d'émotion",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 28 },
+      "title": "Confiance du modele d'emotion",
       "fieldConfig": { "defaults": { "min": 0, "max": 1, "unit": "percentunit" }, "overrides": [] },
       "targets": [{ "expr": "rate(model_prediction_confidence_sum[5m]) / rate(model_prediction_confidence_count[5m])", "legendFormat": "Confiance moy.", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 12,
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 26 },
-      "title": "Temps d'inférence par modèle (s)",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 28 },
+      "title": "Temps d'inference par modele (s)",
       "targets": [{ "expr": "rate(model_inference_time_seconds_sum[5m]) / rate(model_inference_time_seconds_count[5m])", "legendFormat": "{{model_name}}", "refId": "A" }] },
 
-    { "type": "text", "id": 104, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 32 },
-      "options": { "mode": "markdown", "content": "## 🏆 Étape 5 — Score Final" } },
+    { "type": "text", "id": 104, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 34 },
+      "options": { "mode": "markdown", "content": "### Score Final" } },
 
     { "datasource": "Prometheus", "type": "gauge", "id": 13,
-      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 34 },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 36 },
       "title": "Score final (/100)",
       "fieldConfig": { "defaults": { "min": 0, "max": 100, "unit": "short",
         "thresholds": { "mode": "absolute", "steps": [
@@ -113,8 +127,8 @@
       "targets": [{ "expr": "interview_final_score", "legendFormat": "Score", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "gauge", "id": 14,
-      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 34 },
-      "title": "Score brut RF (avant pénalités)",
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 36 },
+      "title": "Score brut RF (avant penalites)",
       "fieldConfig": { "defaults": { "min": 0, "max": 100, "unit": "short",
         "thresholds": { "mode": "absolute", "steps": [
           { "value": 0, "color": "red" }, { "value": 45, "color": "yellow" }, { "value": 75, "color": "green" }
@@ -122,134 +136,88 @@
       "targets": [{ "expr": "interview_base_score", "legendFormat": "Score RF", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 15,
-      "gridPos": { "h": 7, "w": 8, "x": 12, "y": 34 },
-      "title": "Pénalités appliquées (tics + sentiment)",
-      "targets": [{ "expr": "rate(interview_score_penalty_sum[5m]) / rate(interview_score_penalty_count[5m])", "legendFormat": "Pénalité moy.", "refId": "A" }] },
+      "gridPos": { "h": 7, "w": 8, "x": 12, "y": 36 },
+      "title": "Penalites appliquees (tics + sentiment)",
+      "targets": [{ "expr": "rate(interview_score_penalty_sum[5m]) / rate(interview_score_penalty_count[5m])", "legendFormat": "Penalite moy.", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "piechart", "id": 16,
-      "gridPos": { "h": 7, "w": 4, "x": 20, "y": 34 },
-      "title": "Distribution des interprétations",
+      "gridPos": { "h": 7, "w": 4, "x": 20, "y": 36 },
+      "title": "Distribution des interpretations",
       "options": { "pieType": "pie", "legend": { "displayMode": "list", "placement": "bottom" } },
       "targets": [{ "expr": "interview_score_interpretation_total", "legendFormat": "{{interpretation}}", "refId": "A" }] },
 
-    { "type": "text", "id": 105, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 41 },
-      "options": { "mode": "markdown", "content": "## ⚙️ Performances du pipeline" } },
+    { "type": "text", "id": 201, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 43 },
+      "options": { "mode": "markdown", "content": "# Metriques Techniques" } },
+
+    { "type": "text", "id": 105, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 45 },
+      "options": { "mode": "markdown", "content": "### Performances du pipeline" } },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 17,
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 43 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 47 },
       "title": "Temps de traitement par module",
-      "targets": [{ "expr": "rate(api_processing_time_seconds_sum[1m]) / rate(api_processing_time_seconds_count[1m])", "legendFormat": "{{module}}", "refId": "A" }] },
+      "targets": [{ "expr": "rate(api_processing_time_seconds_sum[5m]) / rate(api_processing_time_seconds_count[5m])", "legendFormat": "{{module}}", "refId": "A" }] },
 
     { "datasource": "Prometheus", "type": "timeseries", "id": 18,
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 43 },
-      "title": "Requêtes API (succès / erreurs)",
-      "targets": [{ "expr": "rate(api_requests_total[1m])", "legendFormat": "{{endpoint}} — {{status}}", "refId": "A" }] }
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 47 },
+      "title": "Requetes API (succes / erreurs)",
+      "targets": [{ "expr": "rate(api_requests_total[5m])", "legendFormat": "{{endpoint}} - {{status}}", "refId": "A" }] },
+
+    { "type": "text", "id": 106, "gridPos": { "h": 2, "w": 24, "x": 0, "y": 53 },
+      "options": { "mode": "markdown", "content": "### Monitoring Operationnel — Trafic / Latence / Erreurs" } },
+
+    { "datasource": "Prometheus", "type": "timeseries", "id": 20,
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 55 },
+      "title": "Requetes par seconde (QPS)",
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        { "expr": "sum(rate(http_request_duration_seconds_count[5m]))", "legendFormat": "Total req/s", "refId": "A" },
+        { "expr": "sum(rate(http_request_duration_seconds_count[5m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "B" }
+      ] },
+
+    { "datasource": "Prometheus", "type": "timeseries", "id": 21,
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 55 },
+      "title": "Latence — Percentiles p50 / p95 / p99",
+      "description": "La moyenne cache les problemes. Le p95/p99 (tail latency) impacte les utilisateurs reels.",
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p50 (mediane)", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95", "refId": "B" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99", "refId": "C" }
+      ] },
+
+    { "datasource": "Prometheus", "type": "timeseries", "id": 22,
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 55 },
+      "title": "Taux d'erreurs HTTP (%)",
+      "description": "Pourcentage de reponses avec un code 4xx ou 5xx.",
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        { "expr": "sum(rate(http_request_duration_seconds_count{status_code=~\"5..\"}[5m])) / sum(rate(http_request_duration_seconds_count[5m]))", "legendFormat": "Erreurs 5xx", "refId": "A" },
+        { "expr": "sum(rate(http_request_duration_seconds_count{status_code=~\"4..\"}[5m])) / sum(rate(http_request_duration_seconds_count[5m]))", "legendFormat": "Erreurs 4xx", "refId": "B" }
+      ] },
+
+    { "datasource": "Prometheus", "type": "stat", "id": 23,
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 62 },
+      "title": "Requetes en cours",
+      "description": "Nombre de requetes HTTP traitees simultanement.",
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [
+        { "value": 0, "color": "green" }, { "value": 3, "color": "yellow" }, { "value": 8, "color": "red" }
+      ]}}, "overrides": [] },
+      "targets": [{ "expr": "http_requests_in_progress", "legendFormat": "In-flight", "refId": "A" }] },
+
+    { "datasource": "Prometheus", "type": "timeseries", "id": 24,
+      "gridPos": { "h": 7, "w": 10, "x": 6, "y": 62 },
+      "title": "Latence par endpoint",
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))", "legendFormat": "p95 {{endpoint}}", "refId": "A" }
+      ] },
+
+    { "datasource": "Prometheus", "type": "timeseries", "id": 25,
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 62 },
+      "title": "Volume des requetes entrantes",
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [
+        { "expr": "rate(http_request_size_bytes_sum[5m]) / rate(http_request_size_bytes_count[5m])", "legendFormat": "Taille moy. requete", "refId": "A" }
+      ] }
   ]
-}
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "id": 1,
-      "options": {},
-      "targets": [
-        {
-          "expr": "rate(api_processing_time_seconds_sum[1m]) / rate(api_processing_time_seconds_count[1m])",
-          "interval": "",
-          "legendFormat": "Durée moy. {{module}} (s)",
-          "refId": "A"
-        }
-      ],
-      "title": "Durée de traitement par module",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "id": 2,
-      "options": {},
-      "targets": [
-        {
-          "expr": "nlp_sentiment_score",
-          "interval": "",
-          "legendFormat": "Score de sentiment",
-          "refId": "A"
-        }
-      ],
-      "title": "Score de sentiment NLP",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "id": 3,
-      "options": {},
-      "targets": [
-        {
-          "expr": "interview_final_score",
-          "interval": "",
-          "legendFormat": "Score final (/100)",
-          "refId": "A"
-        }
-      ],
-      "title": "Score final d'entretien",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "id": 4,
-      "options": {},
-      "targets": [
-        {
-          "expr": "rate(nlp_filler_words_total[1m])",
-          "interval": "",
-          "legendFormat": "Tics de langage / min",
-          "refId": "A"
-        }
-      ],
-      "title": "Tics de langage (taux)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": { "defaults": { "min": 0, "max": 1 }, "overrides": [] },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
-      "id": 5,
-      "options": {},
-      "targets": [
-        {
-          "expr": "audio_stress_level",
-          "interval": "",
-          "legendFormat": "Niveau de stress audio",
-          "refId": "A"
-        }
-      ],
-      "title": "Stress détecté (0=Calme, 1=Stressé)",
-      "type": "stat"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": { "defaults": {}, "overrides": [] },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 16 },
-      "id": 6,
-      "options": {},
-      "targets": [
-        {
-          "expr": "rate(model_inference_time_seconds_sum[1m]) / rate(model_inference_time_seconds_count[1m])",
-          "interval": "",
-          "legendFormat": "Inférence {{model_name}} (s)",
-          "refId": "A"
-        }
-      ],
-      "title": "Temps d'inférence par modèle",
-      "type": "timeseries"
-    }
-  ],
-  "schemaVersion": 30,
-  "title": "PRO8605 Dashboard",
-  "version": 2
 }

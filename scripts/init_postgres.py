@@ -1,6 +1,11 @@
-import psycopg2
-import yaml
+import sys
 import os
+import yaml
+
+# Ajouter le dossier racine au path pour importer database.db_manager
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from database.db_manager import DBManager
 
 def load_pg_config():
     config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'settings.yaml')
@@ -10,22 +15,7 @@ def load_pg_config():
 
 def init_postgres():
     pg_cfg = load_pg_config()
-    conn = psycopg2.connect(**pg_cfg)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS sessions (
-            id SERIAL PRIMARY KEY,
-            timestamp TEXT NOT NULL,
-            duration REAL,
-            sentiment_score REAL,
-            pause_ratio REAL,
-            transcription TEXT,
-            full_metrics_json TEXT
-        )
-    ''')
-    conn.commit()
-    cursor.close()
-    conn.close()
+    db = DBManager(use_postgres=True, pg_config=pg_cfg)
     print("✅ Table 'sessions' créée ou déjà existante.")
 
 if __name__ == '__main__':
