@@ -35,6 +35,7 @@
 11. [Tests unitaires](#11-tests-unitaires)
 12. [Structure du projet](#12-structure-du-projet)
 13. [Limites & Roadmap](#13-limites--roadmap)
+14. [Démonstration](#14-demonstration)
 
 ---
 
@@ -572,3 +573,11 @@ Roadmap :
 - Streaming audio long (> 5 minutes)
 - Alerting Grafana (seuils de score)
 - API LLM externe (GPT-4o) pour rapport enrichi
+
+---
+
+## 14 Démonstration
+
+https://github.com/user-attachments/assets/9acee31e-105d-4a33-802f-156d92729355
+
+
