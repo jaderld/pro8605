@@ -420,7 +420,7 @@ def generate_structured_report(
     lines.append(sep)
 
     # ════════════════════════════════════════════════════════════
-    # 6. CONCLUSION LLM (optionnelle — générée par Ollama si disponible)
+    # 6. CONCLUSION LLM
     # ════════════════════════════════════════════════════════════
     if llm_conclusion:
         lines.append(sep)

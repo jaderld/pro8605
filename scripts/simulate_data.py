@@ -171,12 +171,12 @@ def generate_session(index):
     }
 
 def main():
-    print(f"🚀 Génération de {NUM_SESSIONS} sessions ultra-bruitées...")
+    print(f"Génération de {NUM_SESSIONS} sessions")
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
     data = [generate_session(i) for i in range(NUM_SESSIONS)]
     df = pd.DataFrame(data)
     df.to_csv(OUTPUT_FILE, index=False)
-    print("✅ Terminé. Le modèle va enfin devoir 'réfléchir'.")
+    print("Terminé. Le modèle va devoir 'réfléchir'.")
 
 if __name__ == "__main__":
     main()

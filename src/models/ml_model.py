@@ -28,15 +28,12 @@ class ScoringModel:
         """Entraîne la Random Forest pour prédire le score final (0-100)."""
         print("Entraînement du Random Forest Regressor...")
 
-        # 1. Sélection des Features (Le "Vecteur de Fusion")
-        # filler_rate (taux normalisé) remplace filler_count brut :
-        # 7 tics sur 200 mots ≠ 7 tics sur 20 mots → la normalisation est indispensable.
+        # 1. Sélection des features
         features = ['volume', 'tempo', 'pause_ratio', 'sentiment', 'filler_rate', 'stress_level']
         X = df[features]
         y = df['target_score']
 
-        # 2. Split Train/Test pour avoir de VRAIES métriques
-        # C'est crucial pour ne pas avoir 100% d'accuracy
+        # 2. Split Train/Test
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
         # 3. Configuration du modèle
@@ -49,7 +46,7 @@ class ScoringModel:
             log_params({"n_estimators": 100, "max_depth": 10, "random_state": 42})
             log_tags({"model_type": "random_forest", "task": "score_regression"})
 
-            # ── Courbe de progression par nombre d'arbres ─────────────────
+            # Courbe de progression par nombre d'arbres
             # Permet de voir dans MLflow quand la forêt commence à converger
             checkpoints = [1, 5, 10, 25, 50, 75, 100]
             for step, n in enumerate(checkpoints, start=1):
@@ -66,15 +63,15 @@ class ScoringModel:
                 }, step=step)
                 print(f"  n_estimators={n:>3} — MAE: {mae_step:.3f}  R²: {r2_step:.3f}")
 
-            # ── Modèle final (100 arbres) ─────────────────────────────────
+            # Modèle final (100 arbres)
             self.model = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
             self.model.fit(X_train, y_train)
             predictions = self.model.predict(X_test)
             mae = mean_absolute_error(y_test, predictions)
             r2  = r2_score(y_test, predictions)
 
-            # ── K-Fold Cross-Validation (5 folds sur l'ensemble complet) ──
-            # Donne une estimation plus fiable et moins bruitée que le simple split
+            # K-Fold Cross-Validation (5 folds sur l'ensemble complet)
+            # Donne une estimation plus fiable et moins bruitée que le split
             kf = KFold(n_splits=5, shuffle=True, random_state=42)
             rf_cv = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
             cv_mae_scores = -cross_val_score(rf_cv, X, y, cv=kf, scoring="neg_mean_absolute_error")
@@ -87,7 +84,7 @@ class ScoringModel:
 
             print(f"  Cross-Val (5-fold) — MAE: {cv_mae_mean:.3f} ± {cv_mae_std:.3f}  R²: {cv_r2_mean:.3f} ± {cv_r2_std:.3f}")
 
-            # Importance des features → loggée pour analyse dans MLflow
+            # Importance des features loggée pour analyse dans MLflow
             feature_importance = dict(zip(features, self.model.feature_importances_))
             for fname, fval in feature_importance.items():
                 mlflow.log_metric(f"feature_importance_{fname}", round(float(fval), 4))
@@ -135,10 +132,10 @@ class ScoringModel:
             return 50.0  # Score par défaut si pas de modèle
             
         # Reconstruction du vecteur de fusion identique à l'entraînement
-        # Note : emotion_data['emotion'] est converti en 1.0 (Stressé) ou 0.0 (Calme)
+        # emotion_data['emotion'] est converti en 1.0 (Stressé) ou 0.0 (Calme)
         stress_val = 1.0 if emotion_data.get('emotion') == "Stressé" else 0.0
 
-        # filler_rate normalisé : critère principal du scoring (30% du poids)
+        # filler_rate normalisé : critère principal du scoring
         word_count = max(1, nlp_results.get('word_count', 1))
         filler_rate = nlp_results.get('filler_count', 0) / word_count
 

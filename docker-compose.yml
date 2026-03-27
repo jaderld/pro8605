@@ -28,10 +28,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # --- BACKEND & UI (FastAPI sert le HTML/JS) ---
+  # --- BACKEND & UI ---
   api:
     build:
-      context: .  # On remonte au root pour accéder à tout
+      context: .  
       dockerfile: api/Dockerfile
     container_name: pro8605_api
     env_file: .env
@@ -46,11 +46,11 @@ services:
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
-      - ./api:/app/api           # Contient maintenant ton dossier /static (HTML/CSS/JS)
-      - ./src:/app/src           # CRITIQUE : Le code source MLOps
-      - ./storage:/app/storage   # Les modèles et les données simulées
-      - ./config:/app/config     # Le settings.yaml
-      - ./database:/app/database # La base de données
+      - ./api:/app/api           
+      - ./src:/app/src           
+      - ./storage:/app/storage   
+      - ./config:/app/config     
+      - ./database:/app/database 
       - ./scripts:/app/scripts
       - hf_cache:/app/.cache/huggingface
       - torch_cache:/app/.cache/torch
@@ -96,7 +96,7 @@ volumes:
   prometheus_data:
   postgres_data:
   grafana_data:
-  hf_cache:         # Cache HuggingFace (DistilCamemBERT, Whisper, etc.)
-  torch_cache:      # Cache PyTorch / Silero VAD
-  whisper_cache:    # Cache modèle Whisper
+  hf_cache:         
+  torch_cache:      
+  whisper_cache:    
   ollama_models:    # Modèles Ollama (llama3.2:3b, ~2 Go)

@@ -12,9 +12,9 @@
 2. [Guide fonctionnel — Ce que fait le projet](#2-guide-fonctionnel--ce-que-fait-le-projet)
    - 2.1 [Parcours utilisateur](#21-parcours-utilisateur)
    - 2.2 [Le simulateur d'entretien](#22-le-simulateur-dentretien)
-   - 2.3 [Ce qui est analysé dans votre prise de parole](#23-ce-qui-est-analysé-dans-votre-prise-de-parole)
-   - 2.4 [Le score global : comment il est calculé](#24-le-score-global--comment-il-est-calculé)
-   - 2.5 [Le rapport d'analyse détaillé](#25-le-rapport-danalyse-détaillé)
+   - 2.3 [Ce qui est analysé dans la prise de parole](#23-ce-qui-est-analysé-dans-la-prise-de-parole)
+   - 2.4 [Score global : calcul](#24-score-global--calcul)
+   - 2.5 [Rapport d'analyse](#25-rapport-danalyse)
    - 2.6 [Analyse de pertinence par intelligence artificielle](#26-analyse-de-pertinence-par-intelligence-artificielle)
    - 2.7 [Exemples de résultats concrets](#27-exemples-de-résultats-concrets)
 3. [Architecture](#3-architecture)
@@ -26,7 +26,7 @@
    - 5.4 [NLPEngine — DistilCamemBERT](#54-nlpengine--distilcamembert)
    - 5.5 [Modèle ML — Random Forest Regressor](#55-modèle-ml--random-forest-regressor)
    - 5.6 [Rapport structuré — Générateur basé sur règles](#56-rapport-structuré--générateur-basé-sur-règles)
-   - 5.7 [Endpoints d'entraînement à la demande](#57-endpoints-dentraînement-à-la-demande)
+   - 5.7 [Endpoints d'entraînement](#57-endpoints-dentraînement)
 6. [Métriques évaluées](#6-métriques-évaluées)
 7. [MLOps — Tracking & Monitoring](#7-mlops--tracking--monitoring)
 8. [Données d'entraînement](#8-données-dentraînement)
@@ -52,7 +52,7 @@ Ce projet est une plateforme web full-stack permettant à un candidat (ou format
 
 ---
 
-## 2. Guide fonctionnel — Ce que fait le projet
+## 2. Guide fonctionnel
 
 Ce projet est un **simulateur d'entretien professionnel** conçu pour aider les candidats à améliorer leur prise de parole avant un vrai entretien d'embauche. L'idée est simple : vous parlez dans votre micro comme si vous répondiez à une question d'entretien, et l'application vous donne un retour complet sur votre performance — exactement comme un coach RH le ferait, mais de manière instantanée et accessible depuis un navigateur web.
 
@@ -60,7 +60,7 @@ Le projet s'adresse aussi bien aux **candidats** qui veulent s'entraîner seuls 
 
 ### 2.1 Parcours utilisateur
 
-Voici ce qui se passe concrètement quand vous utilisez l'application :
+Voici ce qui se passe concrètement dans l'application :
 
 1. **Vous ouvrez l'interface web** dans votre navigateur (actuellement en local ; http://localhost:8000). L'interface est conçue pour mettre l'utilisateur dans des conditions proches d'un entretien réel.
 
@@ -94,7 +94,7 @@ Dès la fin de l'enregistrement, l'application lance un pipeline complet d'analy
 
 L'application évalue **7 dimensions** de votre prise de parole. Voici ce que chacune mesure et pourquoi c'est important :
 
-| Dimension | Ce qui est évalué | Pourquoi c'est important en entretien |
+| Dimension | Ce qui est évalué | Importance en entretien |
 |---|---|---|
 | **Volume de la voix** | Intensité sonore moyenne de votre discours | Un volume trop faible donne une impression de manque de confiance ; trop fort, d'agressivité |
 | **Débit de parole** | Nombre de mots prononcés par minute | Un débit trop rapide trahit le stress et rend le discours difficile à suivre ; trop lent, il ennuie |
@@ -104,16 +104,16 @@ L'application évalue **7 dimensions** de votre prise de parole. Voici ce que ch
 | **Tics de langage** | Comptage des mots parasites (« euh », « du coup », « voilà », « en fait », « bah »…) | Les tics de langage fragmentent le discours et pénalisent fortement la perception de professionnalisme |
 | **Richesse du discours** | Nombre de mots, développement des réponses | Une réponse trop courte est insuffisante ; une réponse développée avec des exemples concrets est valorisée |
 
-### 2.4 Le score global : comment il est calculé
+### 2.4 Score global : calcul
 
-Le score final est une **note sur 100** qui résume la qualité globale de votre prise de parole. Il est calculé en deux temps :
+Le score final est une **note sur 100** qui résume la qualité globale de la prise de parole. Il est calculé en deux temps :
 
 **1. Score de base (Random Forest)**
 Un modèle de Machine Learning (Random Forest) combine les 6 métriques principales (volume, débit, pauses, sentiment, taux de tics, stress) pour prédire un score brut. Ce modèle a été entraîné sur 2 000 sessions simulées avec des profils variés. Il apprend les relations non linéaires entre les métriques — par exemple, un débit rapide n'est pas toujours mauvais, mais combiné à un taux élevé de tics, il devient pénalisant.
 
 **2. Gardes-fous et pénalités**
 Le score brut est ensuite ajusté par des règles métier inspirées des grilles d'évaluation RH :
-- **Tics de langage excessifs** : si plus de 25% de vos mots sont des tics, le score est plafonné à 20/100, quel que soit le score du modèle. C'est le critère le plus pénalisant, car un recruteur relève immédiatement les « euh » et « du coup » répétés.
+- **Tics de langage excessifs** : si plus de 25% des mots sont des tics, le score est plafonné à 20/100, quel que soit le score du modèle. C'est le critère le plus pénalisant, car un recruteur relève immédiatement les « euh » et « du coup » répétés.
 - **Débit trop rapide** : au-delà de 220 mots/minute, le score est plafonné à 55/100.
 - Des seuils intermédiaires s'appliquent pour les cas modérés.
 
@@ -126,12 +126,12 @@ Le score brut est ensuite ajusté par des règles métier inspirées des grilles
 | 21 – 45 | **À améliorer** — plusieurs dimensions sont en dessous des attentes |
 | 0 – 20 | **Insuffisant** — préparation approfondie nécessaire avant un entretien réel |
 
-### 2.5 Le rapport d'analyse détaillé
+### 2.5 Rapport d'analyse
 
-Au-delà du score, l'application génère un **rapport complet en 6 sections**, rédigé dans un style de feedback professionnel RH :
+Au-delà du score, l'application génère un **rapport complet en 6 sections** :
 
 **Section 1 — Résumé global**
-Un paragraphe de synthèse qui donne le ton : performance globale, émotion perçue, sentiment dominant. Ce résumé correspond à ce qu'un recruteur penserait en 30 secondes.
+Un paragraphe de synthèse : performance globale, émotion perçue, sentiment dominant. Ce résumé correspond à ce qu'un recruteur penserait en 30 secondes.
 
 **Section 2 — Analyse détaillée des scores**
 Chaque métrique est analysée individuellement avec un verdict (excellent, correct, insuffisant…) et une explication concrète. Par exemple : *« Débit vocal : 142 mots/min (Modéré) → Idéal. Le rythme favorise la compréhension et maintient l'attention de l'interlocuteur. »*
@@ -147,8 +147,8 @@ Deux listes concrètes :
 **Section 5 — Conseils pratiques**
 Des recommandations actionnables pour progresser : méthode STAR pour structurer les réponses, exercices de respiration pour gérer le stress, techniques pour réduire les tics de langage, etc.
 
-**Section 6 — Conclusion IA (optionnelle)**
-Si le LLM local (Ollama) est disponible, une conclusion personnalisée est générée par intelligence artificielle. Elle synthétise les résultats en 4 à 6 phrases dans un ton de coach RH bienveillant mais objectif. Cette section est affichée en streaming (token par token) pour une expérience instantanée.
+**Section 6 — Conclusion IA**
+Une conclusion personnalisée est générée par intelligence artificielle. Elle synthétise les résultats en 4 à 6 phrases dans un ton de coach RH bienveillant mais objectif. Cette section est affichée en streaming (token par token) pour une expérience instantanée.
 
 ### 2.6 Analyse de pertinence par intelligence artificielle
 
@@ -434,15 +434,15 @@ Le projet utilise **GitHub Actions** pour automatiser la vérification, les test
 ```
 push / PR sur main
   │
-  ├── 🔍 Lint (flake8)
+  ├── Lint (flake8)
   │       │
-  │       └── 🧪 Tests unitaires + couverture
+  │       └── Tests unitaires + couverture
   │               │
-  │               ├── 📦 Rapport de couverture (artifact)
-  │               ├── 🔒 Audit sécurité dépendances (pip-audit)
+  │               ├── Rapport de couverture (artifact)
+  │               ├── Audit sécurité dépendances (pip-audit)
   │               │
-  │               └── 🐳 Docker Build & Push (GHCR)
-  │                       (uniquement sur push main / tag)
+  │               └── Docker Build & Push (GHCR)
+  │                    (uniquement sur push main / tag)
 ```
 
 ### Jobs

@@ -7,10 +7,10 @@ const statusTxt = document.getElementById('status');
 const loader = document.getElementById('loader');
 const resultsDiv = document.getElementById('results');
 
-// ─── Interview context (filled after question generation) ───
+// ─── Interview context ───
 let interviewContext = { question: '', domain: '', position: '' };
 
-// ─── Interview form: generate question via LLM ───
+// ─── Interview form ───
 const interviewForm = document.getElementById('interviewForm');
 const generateBtn = document.getElementById('generateBtn');
 const questionText = document.getElementById('questionText');
@@ -105,7 +105,7 @@ async function sendAudioToAPI() {
     const formData = new FormData();
     formData.append("file", audioBlob, "recording.wav");
 
-    // Pass interview context if available
+    // Pass interview context if available (question, domain, position)
     if (interviewContext.question) {
         formData.append("interview_question", interviewContext.question);
         formData.append("interview_domain", interviewContext.domain);
@@ -140,7 +140,7 @@ async function sendAudioToAPI() {
 
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
-            buffer = lines.pop(); // garder le fragment incomplet
+            buffer = lines.pop();
 
             for (const line of lines) {
                 if (!line.startsWith('data: ')) continue;
@@ -229,7 +229,7 @@ function displayScores(data) {
         list.innerHTML = '';
         const fillers = textData.fillers || {};
         if (Object.keys(fillers).length === 0) {
-            list.innerHTML = '<li>Aucun tic détecté ✅</li>';
+            list.innerHTML = '<li>Aucun tic détecté !</li>';
         } else {
             for (const [word, count] of Object.entries(fillers)) {
                 const li = document.createElement('li');

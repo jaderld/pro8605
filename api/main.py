@@ -51,9 +51,9 @@ try:
             "dbname": os.getenv("POSTGRES_DB", _pg.get("dbname", "pro8605")),
         },
     )
-    logger.info("✅ DBManager connecté à PostgreSQL.")
+    logger.info("DBManager connecté à PostgreSQL.")
 except Exception as _db_err:
-    logger.warning(f"⚠️ PostgreSQL indisponible, fallback SQLite : {_db_err}")
+    logger.warning(f"PostgreSQL indisponible, fallback SQLite : {_db_err}")
     db_manager = DBManager()
 
 # --- Middleware de monitoring HTTP (trafic / latence / erreurs) ---

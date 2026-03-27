@@ -42,7 +42,7 @@ class AudioEngine:
             duration = librosa.get_duration(y=y, sr=sr)
 
             # 2. Extraction Features
-            # On calcule le RMS (Root Mean Square) qui correspond à l'énergie/volume
+            # On calcule le RMS qui correspond à l'énergie/volume
             rms_frames = librosa.feature.rms(y=y)
             rms = np.mean(rms_frames)
             
@@ -89,8 +89,8 @@ class AudioEngine:
                 'status': 'success',
                 'meta': {'duration': round(float(duration), 2), 'sample_rate': sr},
                 'features': {
-                    'volume': rms,      # <-- CHANGÉ ICI (était mean_volume)
-                    'tempo': tempo,     # <-- CHANGÉ ICI (était tempo)
+                    'volume': rms,      
+                    'tempo': tempo,     
                     'pause_ratio': round(float(pause_ratio), 2),
                 },
                 'speech_segments': segments,

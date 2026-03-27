@@ -18,18 +18,18 @@ def run_test():
     try:
         config_path = os.path.join(parent_dir, 'config', 'settings.yaml')
         engine = NLPEngine(config_path=config_path)
-        print("✅ Moteur NLP initialisé.")
+        print("Moteur NLP initialisé.")
     except Exception as e:
         engine = NLPEngine()
-        print("⚠️ Utilisation de la configuration NLP par défaut.")
+        print("Utilisation de la configuration NLP par défaut.")
 
     # Chargement et entraînement forcé du modèle ML pour le test
-    print("🧠 Entraînement du Juge (Random Forest) en cours...")
+    print("🧠 Entraînement du Random Forest en cours...")
     ml_model = ScoringModel()
     csv_path = os.path.join(parent_dir, 'storage', 'fake_sessions.csv')
     df = pd.read_csv(csv_path)
     ml_model.train(df)
-    print("✅ Moteur ML prêt à noter.")
+    print("Moteur ML prêt à noter.")
 
     # --- 3. JEU DE DONNÉES DE TEST ---
     test_sentences = [
