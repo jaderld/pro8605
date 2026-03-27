@@ -9,7 +9,7 @@
 ## Table des matières
 
 1. [Vue d'ensemble](#1-vue-densemble)
-2. [Guide fonctionnel — Ce que fait le projet](#2-guide-fonctionnel--ce-que-fait-le-projet)
+2. [Guide fonctionnel — Ce que fait le projet](#2-guide-fonctionnel)
    - 2.1 [Parcours utilisateur](#21-parcours-utilisateur)
    - 2.2 [Le simulateur d'entretien](#22-le-simulateur-dentretien)
    - 2.3 [Ce qui est analysé dans la prise de parole](#23-ce-qui-est-analysé-dans-la-prise-de-parole)
